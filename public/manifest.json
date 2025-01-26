@@ -1,6 +1,6 @@
 {
-  "short_name": "Bonanza",
-  "name": "Bonanza - Banking and finance services",
+  "short_name": "BonanzApp",
+  "name": "BonanzApp - Banking and finance services",
   "start_url": ".",
   "display": "standalone",
   "theme_color": "#000000",

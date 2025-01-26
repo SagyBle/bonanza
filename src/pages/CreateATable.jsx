@@ -29,7 +29,7 @@ const CreateATable = () => {
   const handleAddPlayer = (e) => {
     e.preventDefault();
     if (playerName.trim()) {
-      const currentDate = new Date().toLocaleString();
+      const currentDate = new Date().toISOString();
       const newPlayer = {
         name: playerName,
         timestamp: currentDate,
@@ -37,13 +37,11 @@ const CreateATable = () => {
       };
 
       if (editingIndex !== null) {
-        // Update the existing player
         const updatedPlayers = [...players];
         updatedPlayers[editingIndex] = newPlayer;
         setPlayers(updatedPlayers);
         setEditingIndex(null);
       } else {
-        // Add a new player
         setPlayers([...players, newPlayer]);
       }
 
@@ -57,7 +55,7 @@ const CreateATable = () => {
   };
 
   const handleCreateRoom = async () => {
-    const roomCreationTime = new Date().toLocaleString();
+    const roomCreationTime = new Date().toISOString();
     setRoomCreatedTime(roomCreationTime);
 
     const newTable = {
@@ -67,10 +65,28 @@ const CreateATable = () => {
     };
 
     try {
+      // Add new table to the "tables" collection
       const tableDocRef = await addDoc(tablesCollection, newTable);
+
+      // Create a `history` subcollection inside the table document
+      const historyCollectionRef = collection(tableDocRef, "history");
+
+      // Add a `table_created` event to the `history` subcollection
+      await addDoc(historyCollectionRef, {
+        type: "table_created",
+        timestamp: roomCreationTime,
+      });
+
+      // Add players to the table's "players" subcollection and log `player_added` events in the `history` subcollection
       const playersCollectionRef = collection(tableDocRef, "players");
       for (const player of players) {
-        await addDoc(playersCollectionRef, player);
+        const playerDocRef = await addDoc(playersCollectionRef, player);
+        await addDoc(historyCollectionRef, {
+          type: "player_added",
+          playerId: playerDocRef.id,
+          playerName: player.name,
+          timestamp: new Date().toISOString(),
+        });
       }
 
       console.log("Room created with ID:", tableDocRef.id);

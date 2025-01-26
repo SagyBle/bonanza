@@ -7,9 +7,9 @@ import {
   updateDoc,
   onSnapshot,
   increment,
-  serverTimestamp,
   getDoc,
   addDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { db } from "../config/firebase";
 import Asmachta from "../components/Asmachta";
@@ -19,8 +19,15 @@ import sheepIcon from "../assets/icons/sheep.svg";
 import cachingSound from "../assets/sounds/caching.mp3";
 import sheepSound from "../assets/sounds/sheep.mp3";
 import policeSound from "../assets/sounds/police.mp3";
+import History from "../components/hisotry/History";
+import Whatsapp from "../components/whatsapp/Whatsapp";
+import SumupPlayerModal from "../components/SumupPlayer";
+import { HistoryObjectTypes } from "../constants/enums/history.enum";
+import runawayIcon from "../assets/icons/runaway.svg";
+import SumupTable from "../components/SumupTable";
+import CloseTableModal from "../components/CloseTableModal";
 
-const Table = ({ isManagerMode }) => {
+const Table = ({ isManagerMode, soundEnabled }) => {
   const { tableId } = useParams();
   const navigate = useNavigate();
   const [players, setPlayers] = useState([]);
@@ -30,12 +37,14 @@ const Table = ({ isManagerMode }) => {
   const [elapsedTime, setElapsedTime] = useState(0);
   const [newPlayerName, setNewPlayerName] = useState("");
   const [tableData, setTableData] = useState({ title: "", description: "" });
-  const [soundEnabled, setSoundEnabled] = useState(true); // State for sound toggle
+  // const [soundEnabled, setSoundEnabled] = useState(true); // State for sound toggle
   const [loading, setLoading] = useState(true); // Loading state for players
+  const [showSumupPlayerModal, setShowSumupPlayerModal] = useState(false);
+  const [showCloseTableModal, setShowCloseTableModal] = useState(false);
+  const [playerToSumUp, setPlayerToSumUp] = useState(null);
 
   const UPDATE_DURATION = 4 * 60 * 1000; // 4 minutes in milliseconds
 
-  // Load sounds
   const cachingAudio = new Audio(cachingSound);
   const sheepAudio = new Audio(sheepSound);
   const policeAudio = new Audio(policeSound);
@@ -74,10 +83,12 @@ const Table = ({ isManagerMode }) => {
   const handleAddEntry = async (playerId) => {
     try {
       const playerDocRef = doc(db, `tables/${tableId}/players`, playerId);
+      const playerSnapshot = await getDoc(playerDocRef);
+      const player = playerSnapshot.data();
 
       // Update the 'lastUpdated' field and increment the 'entries' field
       await updateDoc(playerDocRef, {
-        lastUpdated: serverTimestamp(),
+        timestamp: new Date().toISOString(),
         entries: increment(1),
       });
 
@@ -86,9 +97,18 @@ const Table = ({ isManagerMode }) => {
         [playerId]: new Date().getTime(),
       }));
 
+      // Add history record for the entry increase
+      const historyCollectionRef = collection(db, `tables/${tableId}/history`);
+      await addDoc(historyCollectionRef, {
+        playerId: playerDocRef.id, // Add playerId
+        playerName: player.name, // Add playerName
+        timestamp: new Date().toISOString(),
+        type: "entry_increased",
+        updatedEntries: player.entries + 1, // Incremented value
+      });
+
       // Play sound based on the number of entries if sound is enabled
       if (soundEnabled) {
-        const player = players.find((p) => p.id === playerId);
         const entries = player.entries + 1; // Since we're incrementing by 1 here
         if (entries < 4) {
           cachingAudio.play(); // Play caching sound
@@ -106,10 +126,23 @@ const Table = ({ isManagerMode }) => {
   const handleReduceEntry = async (playerId) => {
     try {
       const playerDocRef = doc(db, `tables/${tableId}/players`, playerId);
+      const playerSnapshot = await getDoc(playerDocRef);
+      const player = playerSnapshot.data();
 
       // Decrement the 'entries' field, but ensure it doesn't go below 1
+      const newEntries = Math.max(player.entries - 1, 1);
       await updateDoc(playerDocRef, {
-        entries: increment(-1),
+        entries: newEntries,
+      });
+
+      // Add history record for the entry decrease
+      const historyCollectionRef = collection(db, `tables/${tableId}/history`);
+      await addDoc(historyCollectionRef, {
+        playerId: playerDocRef.id, // Add playerId
+        playerName: player.name, // Add playerName
+        timestamp: new Date().toISOString(),
+        type: HistoryObjectTypes.ENTRY_DECREASED,
+        updatedEntries: newEntries, // Updated value after reduction
       });
     } catch (error) {
       console.error("Error reducing entry: ", error);
@@ -122,6 +155,10 @@ const Table = ({ isManagerMode }) => {
     setSelectedPlayer(player);
     setElapsedTime(elapsed);
     setShowAsmachta(true); // Show the popup
+  };
+
+  const handleCloseTable = () => {
+    setShowCloseTableModal(true);
   };
 
   const closeModal = () => {
@@ -156,18 +193,76 @@ const Table = ({ isManagerMode }) => {
       const newPlayer = {
         name: newPlayerName,
         entries: 1,
-        lastUpdated: serverTimestamp(),
+        timestamp: new Date().toISOString(),
       };
 
       // Add the new player to the Firestore table's players collection
       const playersRef = collection(db, `tables/${tableId}/players`);
-      await addDoc(playersRef, newPlayer);
+      const playerDocRef = await addDoc(playersRef, newPlayer);
+
+      // Add a history entry for the new player
+      const historyRef = collection(db, `tables/${tableId}/history`);
+      await addDoc(historyRef, {
+        type: "player_added",
+        playerName: newPlayerName,
+        playerId: playerDocRef.id,
+        timestamp: new Date().toISOString(),
+      });
 
       // Clear the input field
       setNewPlayerName("");
     } catch (error) {
       console.error("Error adding player: ", error);
     }
+  };
+
+  const handleRemovePlayer = async (playerId) => {
+    try {
+      // Prompt confirmation before deleting the player
+      const confirmDelete = window.confirm(
+        "האם אתה בטוח שברצונך למחוק את השחקן?"
+      );
+      if (!confirmDelete) return;
+
+      // Get the reference to the player document
+      const playerDocRef = doc(db, `tables/${tableId}/players`, playerId);
+
+      // Delete the player from Firestore
+      await deleteDoc(playerDocRef);
+
+      // Optionally, you can add a history entry to track the deletion
+      const historyRef = collection(db, `tables/${tableId}/history`);
+      await addDoc(historyRef, {
+        type: "player_deleted",
+        playerId,
+        timestamp: new Date().toISOString(),
+      });
+
+      // You can also remove the player from the local state to reflect the deletion immediately
+      setPlayers((prevPlayers) =>
+        prevPlayers.filter((player) => player.id !== playerId)
+      );
+    } catch (error) {
+      console.error("Error deleting player: ", error);
+    }
+  };
+
+  const getPlayer = (playerId) => {
+    return players.find((player) => player.id === playerId);
+  };
+
+  const handleFinishPlayer = (playerId) => {
+    // console.log("finish player", playerId);
+    setShowSumupPlayerModal(true);
+    const player = getPlayer(playerId);
+    console.log("sagy1", { player });
+
+    setPlayerToSumUp(player);
+  };
+
+  const onCloseSumupPlayerModal = () => {
+    setShowSumupPlayerModal(false);
+    setPlayerToSumUp(null);
   };
 
   return (
@@ -181,20 +276,6 @@ const Table = ({ isManagerMode }) => {
 
       {isManagerMode && (
         <>
-          {/* Sound Toggle */}
-          <div className="mb-4">
-            <label htmlFor="soundToggle" className="text-lg font-semibold">
-              Enable Sounds:
-            </label>
-            <input
-              type="checkbox"
-              id="soundToggle"
-              checked={soundEnabled}
-              onChange={() => setSoundEnabled(!soundEnabled)}
-              className="ml-2"
-            />
-          </div>
-
           {/* Reset All Entries to 1 */}
           <button
             onClick={resetEntriesToOne}
@@ -218,37 +299,69 @@ const Table = ({ isManagerMode }) => {
             {players.map((player) => (
               <li
                 key={player.id}
-                className="flex justify-between items-center p-4 bg-gray-100 rounded-md shadow-md transition-all hover:bg-gray-200"
+                className={`flex justify-between items-center p-4 rounded-md shadow-md transition-all hover:bg-gray-200 ${
+                  player.finalTotalChips || player.finalTotalChips === 0
+                    ? "bg-gray-300 opacity-50" // If player has finalTotalChips, apply these styles
+                    : "bg-gray-100"
+                }`}
               >
                 <div className="flex space-x-3">
-                  <button
-                    onClick={() => handleAddEntry(player.id)}
-                    className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
-                  >
-                    הוסף כניסה
-                  </button>
-
-                  {/* Show reduce entry button only in manager mode */}
-                  {isManagerMode && player.entries > 1 && (
-                    <button
-                      onClick={() => handleReduceEntry(player.id)}
-                      className="bg-orange-500 text-white py-2 px-4 rounded-lg hover:bg-orange-600 transition-colors"
-                    >
-                      הורד כניסה
-                    </button>
-                  )}
-
-                  {recentlyUpdated[player.id] &&
-                    new Date().getTime() - recentlyUpdated[player.id] <=
-                      UPDATE_DURATION && (
+                  {!player.finalTotalChips && player.finalTotalChips !== 0 ? (
+                    <>
                       <button
-                        onClick={() => handleAsmachta(player)}
-                        className="bg-yellow-500 text-white py-2 px-4 rounded-lg hover:bg-yellow-600 transition-colors"
+                        onClick={() => handleAddEntry(player.id)}
+                        className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
                       >
-                        אסמכתא
+                        הוסף כניסה
                       </button>
-                    )}
+                      {isManagerMode && (
+                        <button
+                          onClick={() => handleRemovePlayer(player.id)}
+                          className="bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors"
+                        >
+                          מחק שחקן
+                        </button>
+                      )}
+                      {isManagerMode && player.entries > 1 && (
+                        <button
+                          onClick={() => handleReduceEntry(player.id)}
+                          className="bg-orange-500 text-white py-2 px-4 rounded-lg hover:bg-orange-600 transition-colors"
+                        >
+                          הורד כניסה
+                        </button>
+                      )}
+                      {isManagerMode && (
+                        <button
+                          onClick={() => handleFinishPlayer(player.id)}
+                          className="bg-black text-white py-2 px-4 rounded-lg hover:bg-gray-900 transition-colors"
+                        >
+                          סכם ונעל
+                        </button>
+                      )}
+
+                      {/* Show reduce entry button only in manager mode */}
+                      {recentlyUpdated[player.id] &&
+                        new Date().getTime() - recentlyUpdated[player.id] <=
+                          UPDATE_DURATION && (
+                          <button
+                            onClick={() => handleAsmachta(player)}
+                            className="bg-yellow-500 text-white py-2 px-4 rounded-lg hover:bg-yellow-600 transition-colors"
+                          >
+                            אסמכתא
+                          </button>
+                        )}
+                    </>
+                  ) : (
+                    <span className="text-m text-gray-800 flex justify-center gap-2 pt-1">
+                      <img alt="runawayicon" src={runawayIcon} />
+                      {`יצא עם ${
+                        player.finalTotalChips < 0 ? "-" : ""
+                      }${Math.abs(player.finalTotalChips)}`}{" "}
+                      ז׳יטונים
+                    </span>
+                  )}
                 </div>
+
                 <div className="flex items-center space-x-3">
                   {/* Display Sheep Icon next to Player's Name */}
                   <span className="text-sm text-gray-500">
@@ -276,6 +389,31 @@ const Table = ({ isManagerMode }) => {
         />
       )}
 
+      {showSumupPlayerModal && (
+        <SumupPlayerModal
+          player={playerToSumUp}
+          tableId={tableId}
+          onClose={onCloseSumupPlayerModal}
+        />
+      )}
+
+      <Whatsapp players={players} />
+      <button
+        onClick={handleCloseTable}
+        className="bg-black text-white  py-2 px-4 rounded-lg hover:opacity-80 transition-opacity mt-8"
+      >
+        {" "}
+        סגור שולחן ועבור לשאריות
+      </button>
+
+      {showCloseTableModal && (
+        <CloseTableModal
+          isOpen={showCloseTableModal}
+          onClose={() => setShowCloseTableModal(false)}
+          tableId={tableId}
+        />
+      )}
+
       <h2 className="mt-16">הוספת שחקנים נוספים</h2>
       <div className="mt-4 flex items-center justify-between space-x-4">
         {/* Add Player Button */}
@@ -296,6 +434,8 @@ const Table = ({ isManagerMode }) => {
           dir="rtl"
         />
       </div>
+      {/* <SumupTable players={players} tableId={tableId} /> */}
+      <History tableId={tableId} />
     </div>
   );
 };
