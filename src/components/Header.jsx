@@ -29,7 +29,8 @@ const Header = ({
   return (
     <>
       <header className="bg-gray-800 text-white flex justify-between items-center p-4 shadow-md flex-row-reverse">
-        <h1 className="text-2xl font-semibold">בנק בוננזה</h1>
+        {/* <h1 className="text-2xl font-semibold">בנק בוננזה</h1> */}
+        <h1 className="text-2xl font-semibold">BonanzApp</h1>
 
         <div className="flex items-center space-x-4">
           <button

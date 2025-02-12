@@ -219,7 +219,9 @@ const Sumup = () => {
             </h3>
             <p className="text-gray-700">כניסות: {player.entries}</p>
             <label className="block mt-4">
-              <span className="text-gray-600">Chips Left:</span>
+              <span className="text-gray-600" dir="rtl">
+                ז׳יטונים שנשארו:
+              </span>
               <input
                 type="text"
                 inputMode="numeric"
@@ -351,7 +353,7 @@ const Sumup = () => {
         }`}
         disabled={totalChipsInInputs !== totalChipsOnTable || !allApproved}
       >
-        End Table
+        סגור שולחן
       </button>
     </div>
   );

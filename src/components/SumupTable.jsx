@@ -81,7 +81,7 @@ const SumupTable = ({ players, tableId }) => {
             <h4 className="text-lg font-semibold">{player.name}</h4>
             <p className="text-gray-700">Entries: {player.entries}</p>
             <label className="block mt-4">
-              <span className="text-gray-600">Chips Left:</span>
+              <span className="text-gray-600">;ז׳יטונים שנשארו:</span>
               <input
                 type="text"
                 inputMode="numeric"
@@ -103,7 +103,7 @@ const SumupTable = ({ players, tableId }) => {
         onClick={handleEndTable}
         className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 transition"
       >
-        End Table
+        סגור שולחן
       </button>
     </div>
   );

@@ -1,20 +1,14 @@
-import { addDoc, collection } from "firebase/firestore";
-import React, { useState } from "react";
+import { useState } from "react";
 import { db } from "../config/firebase";
+import { addDoc, collection, doc, setDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
+import DropdownWithSearch from "../components/DropdownWithSearch";
 
 const CreateATable = () => {
-  const [playerName, setPlayerName] = useState("");
-  const [players, setPlayers] = useState([]);
-  const [roomCreatedTime, setRoomCreatedTime] = useState(null);
   const [roomTitle, setRoomTitle] = useState("");
   const [roomDescription, setRoomDescription] = useState("");
-  const [editingIndex, setEditingIndex] = useState(null);
+  const [players, setPlayers] = useState([]);
   const navigate = useNavigate();
-
-  const handleInputChange = (e) => {
-    setPlayerName(e.target.value);
-  };
 
   const handleTitleChange = (e) => {
     setRoomTitle(e.target.value);
@@ -24,63 +18,51 @@ const CreateATable = () => {
     setRoomDescription(e.target.value);
   };
 
-  const tablesCollection = collection(db, "tables");
+  const handlePlayerSelect = (player) => {
+    // Check if the player is already in the players array by comparing player ID (or name)
+    const playerExists = players.some(
+      (existingPlayer) => existingPlayer.id === player.id
+    );
 
-  const handleAddPlayer = (e) => {
-    e.preventDefault();
-    if (playerName.trim()) {
-      const currentDate = new Date().toISOString();
-      const newPlayer = {
-        name: playerName,
-        timestamp: currentDate,
-        entries: 1,
-      };
-
-      if (editingIndex !== null) {
-        const updatedPlayers = [...players];
-        updatedPlayers[editingIndex] = newPlayer;
-        setPlayers(updatedPlayers);
-        setEditingIndex(null);
-      } else {
-        setPlayers([...players, newPlayer]);
-      }
-
-      setPlayerName("");
+    // Only add the player if they don't already exist in the list
+    if (!playerExists) {
+      setPlayers((prevPlayers) => [...prevPlayers, player]);
     }
   };
 
-  const handleEditPlayer = (index) => {
-    setPlayerName(players[index].name);
-    setEditingIndex(index);
-  };
+  const tablesCollection = collection(db, "tables");
 
   const handleCreateRoom = async () => {
     const roomCreationTime = new Date().toISOString();
-    setRoomCreatedTime(roomCreationTime);
+
+    const defaultTitle = `השולחן של ${new Date().toLocaleDateString("he-IL", {
+      weekday: "long",
+    })} - ה${new Date().toLocaleDateString("he-IL", {
+      day: "numeric",
+      month: "numeric",
+      year: "2-digit",
+    })}`;
 
     const newTable = {
       createdAt: roomCreationTime,
-      title: roomTitle,
+      title: roomTitle || defaultTitle,
       description: roomDescription,
     };
 
     try {
-      // Add new table to the "tables" collection
       const tableDocRef = await addDoc(tablesCollection, newTable);
-
-      // Create a `history` subcollection inside the table document
       const historyCollectionRef = collection(tableDocRef, "history");
 
-      // Add a `table_created` event to the `history` subcollection
       await addDoc(historyCollectionRef, {
         type: "table_created",
         timestamp: roomCreationTime,
       });
 
-      // Add players to the table's "players" subcollection and log `player_added` events in the `history` subcollection
       const playersCollectionRef = collection(tableDocRef, "players");
       for (const player of players) {
-        const playerDocRef = await addDoc(playersCollectionRef, player);
+        const playerDocRef = doc(playersCollectionRef, player.id); // Use the player's ID as the doc ID
+        await setDoc(playerDocRef, { ...player, entries: 1 }); // Add the player document with the custom ID
+
         await addDoc(historyCollectionRef, {
           type: "player_added",
           playerId: playerDocRef.id,
@@ -89,7 +71,6 @@ const CreateATable = () => {
         });
       }
 
-      console.log("Room created with ID:", tableDocRef.id);
       navigate(`/table/${tableDocRef.id}`);
     } catch (error) {
       console.error("Error creating room: ", error);
@@ -97,15 +78,17 @@ const CreateATable = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto bg-gradient-to-r from-black via-gray-800 to-black text-white p-8 rounded-xl shadow-xl">
+    <div className="w-full mx-auto bg-gradient-to-r from-black via-gray-800 to-black text-white p-8 rounded-xl shadow-xl">
       <h2 className="text-4xl font-bold text-center mb-6 text-yellow-400 drop-shadow-md">
         צור שולחן פוקר
       </h2>
 
-      <div className="mb-4">
+      <DropdownWithSearch onSelectPlayer={handlePlayerSelect} />
+
+      <div className="mb-4 flex flex-col">
         <label
           htmlFor="roomTitle"
-          className="text-lg font-semibold text-green-500"
+          className="text-lg font-semibold text-green-500 bg-red-90 self-end mt-4"
           dir="rtl"
         >
           כותרת:
@@ -122,10 +105,10 @@ const CreateATable = () => {
         />
       </div>
 
-      <div className="mb-6">
+      <div className="mb-6 flex flex-col">
         <label
           htmlFor="roomDescription"
-          className="text-lg font-semibold text-green-500"
+          className="text-lg font-semibold text-green-500 self-end"
           dir="rtl"
         >
           תיאור:
@@ -142,68 +125,12 @@ const CreateATable = () => {
         />
       </div>
 
-      <form onSubmit={handleAddPlayer} className="mb-6">
-        <div className="mb-4">
-          <label
-            htmlFor="playerName"
-            className="text-lg font-semibold text-green-500"
-          >
-            הוספת שחקנים
-          </label>
-          <input
-            type="text"
-            id="playerName"
-            value={playerName}
-            onChange={handleInputChange}
-            className="w-full p-3 mt-2 rounded-lg bg-gray-900 text-white shadow-lg border border-green-500 focus:ring-2 focus:ring-green-600 focus:outline-none"
-            placeholder="Enter player name"
-            required
-          />
-        </div>
-
-        <button
-          type="submit"
-          className="w-full py-3 px-4 mt-4 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg shadow-md transition-colors duration-300"
-        >
-          {editingIndex !== null ? "Update Player" : "Add Player"}
-        </button>
-      </form>
-
-      <h3 className="text-xl font-semibold text-yellow-400 mb-4">שחקנים:</h3>
-      <ul className="list-none p-0">
-        {players.map((player, index) => (
-          <li
-            key={index}
-            className="flex justify-between items-center bg-gray-700 p-4 mb-3 rounded-lg shadow-lg"
-          >
-            <div>
-              <strong>{player.name}</strong> - <em>{player.timestamp}</em>
-            </div>
-            <div>
-              <button
-                onClick={() => handleEditPlayer(index)}
-                className="ml-4 py-2 px-4 bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-lg"
-              >
-                ערוך
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
-
       <button
         onClick={handleCreateRoom}
         className="w-full py-3 px-4 mt-6 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg shadow-md transition-colors duration-300"
       >
         צור שולחן
       </button>
-
-      {roomCreatedTime && (
-        <div className="mt-6 text-center">
-          <h4 className="font-semibold text-green-400">Room Created At:</h4>
-          <p>{roomCreatedTime}</p>
-        </div>
-      )}
     </div>
   );
 };

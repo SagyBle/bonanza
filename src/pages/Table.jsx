@@ -10,6 +10,7 @@ import {
   getDoc,
   addDoc,
   deleteDoc,
+  setDoc,
 } from "firebase/firestore";
 import { db } from "../config/firebase";
 import Asmachta from "../components/Asmachta";
@@ -26,6 +27,10 @@ import { HistoryObjectTypes } from "../constants/enums/history.enum";
 import runawayIcon from "../assets/icons/runaway.svg";
 import SumupTable from "../components/SumupTable";
 import CloseTableModal from "../components/CloseTableModal";
+import DropdownWithSearch from "../components/DropdownWithSearch";
+import AddFoodExpenses from "../components/AddFoodExpenses";
+import AddPlayerDropdown from "../components/AddPlayerDropdown";
+import AddPlayerModal from "../components/AddPlayerModal";
 
 const Table = ({ isManagerMode, soundEnabled }) => {
   const { tableId } = useParams();
@@ -42,6 +47,8 @@ const Table = ({ isManagerMode, soundEnabled }) => {
   const [showSumupPlayerModal, setShowSumupPlayerModal] = useState(false);
   const [showCloseTableModal, setShowCloseTableModal] = useState(false);
   const [playerToSumUp, setPlayerToSumUp] = useState(null);
+  const [playerToAdd, setPlayerToAdd] = useState();
+  const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
 
   const UPDATE_DURATION = 4 * 60 * 1000; // 4 minutes in milliseconds
 
@@ -183,38 +190,39 @@ const Table = ({ isManagerMode, soundEnabled }) => {
     }
   };
 
-  const handleAddPlayer = async () => {
-    if (newPlayerName.trim() === "") {
-      alert("Please enter a player name");
-      return;
-    }
+  // need to change this part
+  // const handleAddPlayer = async () => {
+  //   if (newPlayerName.trim() === "") {
+  //     alert("Please enter a player name");
+  //     return;
+  //   }
 
-    try {
-      const newPlayer = {
-        name: newPlayerName,
-        entries: 1,
-        timestamp: new Date().toISOString(),
-      };
+  //   try {
+  //     const newPlayer = {
+  //       name: newPlayerName,
+  //       entries: 1,
+  //       timestamp: new Date().toISOString(),
+  //     };
 
-      // Add the new player to the Firestore table's players collection
-      const playersRef = collection(db, `tables/${tableId}/players`);
-      const playerDocRef = await addDoc(playersRef, newPlayer);
+  //     // Add the new player to the Firestore table's players collection
+  //     const playersRef = collection(db, `tables/${tableId}/players`);
+  //     const playerDocRef = await addDoc(playersRef, newPlayer);
 
-      // Add a history entry for the new player
-      const historyRef = collection(db, `tables/${tableId}/history`);
-      await addDoc(historyRef, {
-        type: "player_added",
-        playerName: newPlayerName,
-        playerId: playerDocRef.id,
-        timestamp: new Date().toISOString(),
-      });
+  //     // Add a history entry for the new player
+  //     const historyRef = collection(db, `tables/${tableId}/history`);
+  //     await addDoc(historyRef, {
+  //       type: "player_added",
+  //       playerName: newPlayerName,
+  //       playerId: playerDocRef.id,
+  //       timestamp: new Date().toISOString(),
+  //     });
 
-      // Clear the input field
-      setNewPlayerName("");
-    } catch (error) {
-      console.error("Error adding player: ", error);
-    }
-  };
+  //     // Clear the input field
+  //     setNewPlayerName("");
+  //   } catch (error) {
+  //     console.error("Error adding player: ", error);
+  //   }
+  // };
 
   const handleRemovePlayer = async (playerId) => {
     try {
@@ -265,12 +273,61 @@ const Table = ({ isManagerMode, soundEnabled }) => {
     setPlayerToSumUp(null);
   };
 
+  const handleAddPlayer = (player) => {
+    console.log("player selcted from table component: ", player);
+    setPlayerToAdd(player);
+    setShowAddPlayerModal(true);
+  };
+
+  const onCloseAddPlayerModal = () => {
+    setShowAddPlayerModal(false);
+    setPlayerToAdd("");
+  };
+
+  const handleSubmitPlayer = async () => {
+    if (!playerToAdd) return;
+
+    const playerDocRef = doc(db, `tables/${tableId}/players`, playerToAdd.id);
+
+    try {
+      await setDoc(playerDocRef, {
+        name: playerToAdd.name,
+        entries: 1,
+        timestamp: new Date().toISOString(),
+      });
+
+      // Add a history entry for the added player
+      const historyRef = collection(db, `tables/${tableId}/history`);
+      await addDoc(historyRef, {
+        type: "player_added",
+        playerName: playerToAdd.name,
+        playerId: playerToAdd.id,
+        timestamp: new Date().toISOString(),
+      });
+
+      console.log("Player added successfully:", playerToAdd);
+      setShowAddPlayerModal(false);
+      setPlayerToAdd(null);
+    } catch (error) {
+      console.error("Error adding player:", error);
+    }
+  };
+
   return (
-    <div className="p-6 max-w-4xl mx-auto bg-white shadow-md rounded-md">
+    <div className="p-6 max-w-4xl mx-auto bg-white ">
+      {/* <AddFoodExpenses tableId={tableId} /> */}
+
       {/* Display the title and description of the table */}
       <h2 className="text-2xl font-bold mb-4">
         {tableData.title ||
-          `Table of the day ${new Date().toLocaleDateString()}`}
+          // `Table of the day ${new Date().toLocaleDateString()}`}
+
+          `שולחן של ${new Date().toLocaleDateString("he-IL", {
+            weekday: "long",
+          })} ה${new Date().toLocaleDateString("he-IL", {
+            day: "numeric",
+            month: "numeric",
+          })}`}
       </h2>
       <p className="mb-4">{tableData.description || ""}</p>
 
@@ -415,26 +472,22 @@ const Table = ({ isManagerMode, soundEnabled }) => {
       )}
 
       <h2 className="mt-16">הוספת שחקנים נוספים</h2>
-      <div className="mt-4 flex items-center justify-between space-x-4">
-        {/* Add Player Button */}
-        <button
-          onClick={handleAddPlayer}
-          className="bg-green-500 text-white p-3 rounded-md hover:bg-green-600 transition-all ease-in-out duration-300"
-        >
-          הוסף
-        </button>
-
-        {/* Input for Player Name */}
-        <input
-          type="text"
-          value={newPlayerName}
-          onChange={(e) => setNewPlayerName(e.target.value)}
-          placeholder="הכנס את שם השחקן..."
-          className="border p-3 rounded-md flex-1 text-right bg-gray-100 focus:outline-none focus:ring-2 focus:ring-green-500"
-          dir="rtl"
+      {/* <DropdownWithSearch onSelectPlayer={handlePlayerSelect} /> */}
+      <AddPlayerDropdown
+        onSelectPlayer={(player) => handleAddPlayer(player)}
+        playersToReduce={players}
+      />
+      {showAddPlayerModal && (
+        <AddPlayerModal
+          // player={playerToSumUp}
+          // tableId={tableId}
+          // onClose={onCloseSumupPlayerModal}
+          onConfirm={handleSubmitPlayer}
+          player={playerToAdd}
+          onClose={onCloseAddPlayerModal}
         />
-      </div>
-      {/* <SumupTable players={players} tableId={tableId} /> */}
+      )}
+      <div className="mt-4 flex items-center justify-between space-x-4"></div>
       <History tableId={tableId} />
     </div>
   );

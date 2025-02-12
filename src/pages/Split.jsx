@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { minimalSettlement } from "../utils/balance.utils";
 import whatsappIcon from "../assets/icons/whatsapp.svg";
+import Paybox from "../components/Paybox";
 
 const Split = () => {
   const { tableId } = useParams();
   const [players, setPlayers] = useState([]);
+  const [generalPlayers, setGeneralPlayers] = useState([]);
   const [transactions, setTransactions] = useState([]);
 
-  // Fetch players from the database
   useEffect(() => {
     const fetchPlayers = async () => {
       try {
@@ -32,10 +33,43 @@ const Split = () => {
     fetchPlayers();
   }, [tableId]);
 
-  // Calculate and display split transactions
+  useEffect(() => {
+    const fetchGeneralPlayers = async () => {
+      try {
+        const playerIds = players.map((player) => player.id);
+        if (playerIds.length === 0) {
+          setGeneralPlayers([]);
+          return;
+        }
+
+        const generalPlayersQuery = query(
+          collection(db, "generalPlayers"),
+          where("__name__", "in", playerIds)
+        );
+        const querySnapshot = await getDocs(generalPlayersQuery);
+        const fetchedPlayers = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setGeneralPlayers(fetchedPlayers);
+      } catch (error) {
+        console.error("Error fetching general players:", error);
+      }
+    };
+
+    fetchGeneralPlayers();
+  }, [players]);
+
+  const getPlayerDetails = (playerId) => {
+    const player = generalPlayers.find((gp) => gp.id === playerId);
+    return player
+      ? { name: player.name, id: player.id, phoneNumber: player.phoneNumber }
+      : { name: "Unknown", id: playerId, phoneNumber: "N/A" };
+  };
+
   const calculateSplit = () => {
     const playerObjects = players.map((player) => ({
-      user: player.name,
+      user: player.id,
       buy_ins: player.entries,
       final_value: player.finalTotalChips,
     }));
@@ -43,14 +77,14 @@ const Split = () => {
     const txs = minimalSettlement(playerObjects);
 
     const formattedTransactions = txs.map(([debtor, creditor, amt]) => ({
-      debtor,
-      creditor,
-      amount: amt / 2, // Divide by 2 as per your logic
+      debtor: getPlayerDetails(debtor),
+      creditor: getPlayerDetails(creditor),
+      amount: amt / 2,
     }));
+
     setTransactions(formattedTransactions);
   };
 
-  // Send transactions as a WhatsApp message
   const sendToWhatsApp = () => {
     if (transactions.length === 0) {
       alert("אין חישובים לשליחה!");
@@ -59,13 +93,17 @@ const Split = () => {
 
     const message = transactions
       .map(
-        (tx) => `${tx.debtor} משלם ל  ${tx.creditor} סכום של ${tx.amount} ש״ח`
+        (tx) => `${tx.debtor.name} מעביר ל${tx.creditor.name} ${tx.amount} ש״ח`
       )
       .join("\n");
 
     const encodedMessage = encodeURIComponent(message);
-    const whatsappURL = `https://wa.me/?text=${encodedMessage}`;
-    window.open(whatsappURL, "_blank");
+    const footer = "\n\nנוצר ע״י bonazApp";
+
+    const whatsappURL = `https://wa.me/?text=${encodeURIComponent(
+      encodedMessage + footer
+    )}`;
+    window.open(whatsappURL, "_self");
   };
 
   return (
@@ -120,12 +158,18 @@ const Split = () => {
                 dir="rtl"
               >
                 <p className="text-gray-700">
-                  <span className="font-bold">{tx.debtor}</span> משלם ל{" "}
-                  <span className="font-bold">{tx.creditor}</span> סכום של{" "}
+                  <span className="font-bold">{tx.debtor.name}</span> משלם ל{" "}
+                  <span className="font-bold">{tx.creditor.name}</span> סכום של{" "}
                   <span className="font-bold">
                     {tx.amount} {"ש״ח "}
                   </span>
                 </p>
+
+                {/* <Paybox
+                  amount={tx.amount}
+                  creditorName={tx.creditor.name}
+                  creditorPhoneNumber={tx.creditor.phoneNumber}
+                /> */}
               </li>
             ))}
           </ul>

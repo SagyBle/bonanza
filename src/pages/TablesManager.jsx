@@ -4,6 +4,10 @@ import { getDocs, collection, deleteDoc, doc } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { useNavigate } from "react-router-dom";
 import TableCreated from "../components/TableCreated";
+import AddGeneralPlayer from "../components/AddGeneralPlayer";
+import tableIcon from "../assets/icons/table.svg";
+import sheepIcon from "../assets/icons/sheep.svg";
+import AddFoodExpenses from "../components/AddFoodExpenses";
 
 const TablesManager = ({ isManagerMode }) => {
   const [tables, setTables] = useState([]);
@@ -11,6 +15,7 @@ const TablesManager = ({ isManagerMode }) => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   const [tableToDelete, setTableToDelete] = useState(null); // Track which table to delete
+  const [showAddGeneralPlayer, setShowAddGeneralPlayer] = useState(false);
   const navigate = useNavigate();
 
   const tablesCollection = collection(db, "tables");
@@ -65,6 +70,9 @@ const TablesManager = ({ isManagerMode }) => {
   const toggleCreateForm = () => {
     setShowCreateForm((prev) => !prev);
   };
+  const toggleAddGeneralPlayer = () => {
+    setShowAddGeneralPlayer((prev) => !prev);
+  };
 
   const deleteTable = async () => {
     try {
@@ -90,23 +98,34 @@ const TablesManager = ({ isManagerMode }) => {
 
   return (
     <div style={{ padding: "20px", maxWidth: "800px", margin: "0 auto" }}>
-      <div style={{ marginTop: "40px" }}>
+      <div
+        className="flex flex-col items-center gap-4"
+        style={{ marginTop: "40px" }}
+      >
         {!showCreateForm && (
           <button
             onClick={toggleCreateForm}
-            style={{
-              padding: "10px 20px",
-              backgroundColor: "#007BFF",
-              color: "#fff",
-              border: "none",
-              borderRadius: "4px",
-              cursor: "pointer",
-            }}
+            className="flex items-center gap-2 px-4  bg-blue-500 text-white rounded-md hover:opacity-80 shadow-md"
           >
-            Create Table
+            <img className="w-16 h-14" alt="table" src={tableIcon} />
+            צור שולחן חדש
           </button>
         )}
+
+        {!showAddGeneralPlayer && (
+          <button
+            onClick={toggleAddGeneralPlayer}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-md hover:opacity-80 shadow-md"
+          >
+            <img src={sheepIcon} alt="sheep" className="w-10 h-10" />
+            הוסף שחקן כללי
+          </button>
+        )}
+      </div>
+
+      <div style={{ marginTop: "20px" }} className="flex flex-col gap-8 ">
         {showCreateForm && <CreateATable />}
+        {showAddGeneralPlayer && <AddGeneralPlayer />}
       </div>
 
       <div style={{ marginBottom: "40px" }}>
@@ -138,7 +157,7 @@ const TablesManager = ({ isManagerMode }) => {
             >
               {activeTable.title}
             </h3>
-            <p style={{ margin: "10px 0", color: "#555" }}>
+            <p dir="rtl" style={{ margin: "10px 0", color: "#555" }}>
               {activeTable.description}
             </p>
             <TableCreated
@@ -165,7 +184,7 @@ const TablesManager = ({ isManagerMode }) => {
             )}
           </div>
         ) : (
-          <p style={{ color: "#999" }}>No active table</p>
+          <p style={{ color: "#999" }}>אין שולחנות פעילים כרגע</p>
         )}
       </div>
 
@@ -191,7 +210,7 @@ const TablesManager = ({ isManagerMode }) => {
               <h4 style={{ fontSize: "18px", fontWeight: "bold" }}>
                 {table.title}
               </h4>
-              <p style={{ margin: "10px 0", color: "#555" }}>
+              <p dir="rtl" style={{ margin: "10px 0", color: "#555" }}>
                 {table.description}
               </p>
               <TableCreated

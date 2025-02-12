@@ -110,7 +110,7 @@ const Leftovers = ({ isManagerMode }) => {
 
       <div className="mb-6">
         <h3 className="text-lg font-medium" dir="rtl">
-          בחר שחקן שיזכה בשאריות:
+          בחר את השחקן שזכה בשאריות:
         </h3>
         <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {players.map((player) => (

@@ -14,6 +14,9 @@ import { useState } from "react";
 import Sumup from "./pages/Sumup";
 import Leftovers from "./pages/Leftovers";
 import Split from "./pages/Split";
+import Footer from "./components/Footer";
+import UnionsManager from "./pages/UnionsManager";
+import Union from "./pages/Union";
 
 function App() {
   const [isManagerMode, setIsManagerMode] = useState(false);
@@ -21,12 +24,15 @@ function App() {
   return (
     <div className="App">
       <Router>
-        <Header
-          isManagerMode={isManagerMode}
-          setIsManagerMode={setIsManagerMode}
-          soundEnabled={soundEnabled}
-          setSoundEnabled={setSoundEnabled}
-        />
+        <header>
+          <Header
+            isManagerMode={isManagerMode}
+            setIsManagerMode={setIsManagerMode}
+            soundEnabled={soundEnabled}
+            setSoundEnabled={setSoundEnabled}
+          />
+        </header>
+
         <Routes>
           <Route
             path="/"
@@ -53,8 +59,19 @@ function App() {
             path="/split/:tableId"
             element={<Split isManagerMode={isManagerMode} />}
           />
+          <Route
+            path="/unions"
+            element={<UnionsManager isManagerMode={isManagerMode} />}
+          />
+          <Route
+            path="/union/:unionId"
+            element={<Union isManagerMode={isManagerMode} />}
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <footer>
+          <Footer />
+        </footer>
       </Router>
     </div>
   );

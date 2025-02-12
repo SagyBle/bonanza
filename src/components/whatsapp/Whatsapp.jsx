@@ -15,30 +15,6 @@ const Whatsapp = ({ players }) => {
       setLoading(false);
     }
   }, [players]);
-  //   useEffect(() => {
-  //     const fetchPlayers = async () => {
-  //       try {
-  //         const playersCollectionRef = collection(
-  //           db,
-  //           `tables/${tableId}/players`
-  //         );
-  //         const snapshot = await getDocs(playersCollectionRef);
-  //         const playersData = snapshot.docs.map((doc) => ({
-  //           id: doc.id,
-  //           ...doc.data(),
-  //         }));
-  //         console.log({ playersData });
-
-  //         setPlayers(playersData);
-  //         setLoading(false);
-  //       } catch (error) {
-  //         console.error("Error fetching players: ", error);
-  //         setLoading(false);
-  //       }
-  //     };
-
-  //     fetchPlayers();
-  //   }, [tableId]);
 
   const generateMessage = () => {
     return players
@@ -47,11 +23,16 @@ const Whatsapp = ({ players }) => {
   };
 
   const sendToWhatsApp = () => {
+    // const message =
+    // console.log({ message });
     const message = generateMessage();
-    console.log({ message });
+    const footer = "\n\nנוצר ע״י bonazApp";
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(
+      message + footer
+    )}`;
+    console.log(whatsappUrl);
 
-    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, "_blank");
+    window.open(whatsappUrl, "_self");
   };
 
   if (loading) {
