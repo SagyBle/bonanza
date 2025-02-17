@@ -26,7 +26,7 @@ const Whatsapp = ({ players }) => {
     // const message =
     // console.log({ message });
     const message = generateMessage();
-    const footer = "\n\nנוצר ע״י bonazApp";
+    const footer = "\n\nנוצר ע״י bonanzApp";
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(
       message + footer
     )}`;

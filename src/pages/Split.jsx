@@ -98,7 +98,7 @@ const Split = () => {
       .join("\n");
 
     const encodedMessage = encodeURIComponent(message);
-    const footer = "\n\nנוצר ע״י bonazApp";
+    const footer = "\n\nנוצר ע״י bonanzApp";
 
     const whatsappURL = `https://wa.me/?text=${encodeURIComponent(
       encodedMessage + footer
