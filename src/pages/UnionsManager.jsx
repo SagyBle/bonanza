@@ -101,6 +101,56 @@ const UnionsManager = () => {
         איחוד שולחנות
       </h1>
 
+      <div className="mt-8">
+        <h2 className="text-2xl font-bold mb-4" dir="rtl">
+          איחודים קיימים
+        </h2>
+        {unions.length > 0 ? (
+          <ul className="grid grid-cols-1 gap-4">
+            {unions.map((union) => (
+              <li
+                key={union.id}
+                onClick={() => navigate(`/union/${union.id}`)}
+                className="p-4 border rounded-lg shadow-sm cursor-pointer hover:bg-gray-100 transition"
+                dir="rtl"
+              >
+                <div className="flex flex-col">
+                  {/* Display the union title (i.e. union name) */}
+                  <span className="font-bold">{union.title}</span>
+                  {/* Show the union id in small text */}
+                  <span className="text-xs text-gray-500">
+                    איחוד: {union.id}
+                  </span>
+                  {/* Show creation date */}
+                  <span className="text-sm text-gray-600">
+                    <TableCreated createdAt={union.createdAt.toDate()} />
+                  </span>
+                  {/* Show united table names joined by a hyphen */}
+                  <span className="text-sm text-gray-700 mt-2">
+                    {union.tables
+                      .map((tableId) => {
+                        const tableDetail = tables.find(
+                          (table) => table.id === tableId
+                        );
+                        return tableDetail ? tableDetail.title : tableId;
+                      })
+                      .join(" - ")}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-gray-600" dir="rtl">
+            אין איחודים קיימים.
+          </p>
+        )}
+      </div>
+
+      <h2 className="text-2xl font-bold mb-4 mt-8" dir="rtl">
+        יצירת איחוד חדש
+      </h2>
+
       {tables.length > 0 ? (
         <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           {tables.map((table) => (
@@ -157,52 +207,6 @@ const UnionsManager = () => {
         >
           איחוד שולחנות
         </button>
-      </div>
-
-      <div className="mt-8">
-        <h2 className="text-2xl font-bold mb-4" dir="rtl">
-          איחודים קיימים
-        </h2>
-        {unions.length > 0 ? (
-          <ul className="grid grid-cols-1 gap-4">
-            {unions.map((union) => (
-              <li
-                key={union.id}
-                onClick={() => navigate(`/union/${union.id}`)}
-                className="p-4 border rounded-lg shadow-sm cursor-pointer hover:bg-gray-100 transition"
-                dir="rtl"
-              >
-                <div className="flex flex-col">
-                  {/* Display the union title (i.e. union name) */}
-                  <span className="font-bold">{union.title}</span>
-                  {/* Show the union id in small text */}
-                  <span className="text-xs text-gray-500">
-                    איחוד: {union.id}
-                  </span>
-                  {/* Show creation date */}
-                  <span className="text-sm text-gray-600">
-                    <TableCreated createdAt={union.createdAt.toDate()} />
-                  </span>
-                  {/* Show united table names joined by a hyphen */}
-                  <span className="text-sm text-gray-700 mt-2">
-                    {union.tables
-                      .map((tableId) => {
-                        const tableDetail = tables.find(
-                          (table) => table.id === tableId
-                        );
-                        return tableDetail ? tableDetail.title : tableId;
-                      })
-                      .join(" - ")}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-gray-600" dir="rtl">
-            אין איחודים קיימים.
-          </p>
-        )}
       </div>
     </div>
   );

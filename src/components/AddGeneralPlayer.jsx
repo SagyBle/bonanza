@@ -31,41 +31,15 @@ const AddGeneralPlayer = () => {
   };
 
   return (
-    <div
-      style={{
-        padding: "20px",
-        borderRadius: "8px",
-        backgroundColor: "#e7f1ff", // Light blue background for consistency
-        boxShadow: "0 4px 12px rgba(0, 123, 255, 0.2)", // Soft shadow effect
-        marginTop: "20px",
-        maxWidth: "800px",
-        margin: "0 auto", // Center align like TablesManager
-        border: "2px solid #007BFF", // Consistent border style
-      }}
-    >
-      <h2
-        style={{
-          fontSize: "24px",
-          fontWeight: "bold",
-          color: "#007BFF",
-          marginBottom: "20px",
-        }}
-      >
+    <div className="max-w-3xl mx-auto bg-gradient-to-r from-black via-gray-800 to-black text-white p-8 rounded-xl shadow-xl mt-8 w-full">
+      <h2 className="text-4xl font-bold text-center mb-6 text-yellow-400 drop-shadow-md">
         הוסף שחקן כללי
       </h2>
-      <form
-        onSubmit={handleAddPlayer}
-        style={{ display: "flex", flexDirection: "column" }}
-      >
+      <form onSubmit={handleAddPlayer} className="flex flex-col">
         <label
           htmlFor="playerName"
           dir="rtl"
-          style={{
-            marginBottom: "5px",
-            fontSize: "16px",
-            color: "#333",
-            fontWeight: "bold",
-          }}
+          className="mb-2 text-lg font-semibold"
         >
           שם שחקן:
         </label>
@@ -77,24 +51,13 @@ const AddGeneralPlayer = () => {
           onChange={(e) => setPlayerName(e.target.value)}
           required
           dir="rtl"
-          style={{
-            marginBottom: "15px",
-            padding: "10px",
-            borderRadius: "4px",
-            border: "1px solid #ccc",
-            fontSize: "16px",
-          }}
+          className="mb-4 p-3 rounded-lg bg-gray-900 text-white shadow border border-green-500 focus:ring-2 focus:ring-green-600"
         />
 
         <label
           htmlFor="playerPhone"
           dir="rtl"
-          style={{
-            marginBottom: "5px",
-            fontSize: "16px",
-            color: "#333",
-            fontWeight: "bold",
-          }}
+          className="mb-2 text-lg font-semibold"
         >
           מספר טלפון:
         </label>
@@ -106,28 +69,14 @@ const AddGeneralPlayer = () => {
           onChange={(e) => setPlayerPhone(e.target.value)}
           required
           dir="rtl"
-          style={{
-            marginBottom: "20px",
-            padding: "10px",
-            borderRadius: "4px",
-            border: "1px solid #ccc",
-            fontSize: "16px",
-          }}
+          className="mb-6 p-3 rounded-lg bg-gray-900 text-white shadow border border-green-500 focus:ring-2 focus:ring-green-600"
         />
 
         <button
           type="submit"
           disabled={isAdding}
-          style={{
-            padding: "10px 20px",
-            backgroundColor: isAdding ? "#ccc" : "#007BFF",
-            color: "#fff",
-            fontWeight: "bold",
-            border: "none",
-            borderRadius: "4px",
-            cursor: isAdding ? "not-allowed" : "pointer",
-            transition: "background-color 0.3s",
-          }}
+          className="py-3 px-6 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg shadow transition duration-300 disabled:opacity-50"
+          dir="rtl"
         >
           {isAdding ? "מוסיף..." : "הוסף שחקן"}
         </button>
