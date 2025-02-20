@@ -6,15 +6,15 @@ import HistoryEntry from "./HistoryEntry";
 const History = ({ tableId }) => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
     const historyCollection = collection(db, "tables", tableId, "history");
     const orderedHistoryQuery = query(
       historyCollection,
-      orderBy("timestamp", "asc")
+      orderBy("timestamp", "desc") // Fetch in descending order (newest first)
     );
 
-    // Set up a real-time listener
     const unsubscribe = onSnapshot(
       orderedHistoryQuery,
       (snapshot) => {
@@ -23,7 +23,7 @@ const History = ({ tableId }) => {
           ...doc.data(),
         }));
         setHistory(historyData);
-        setLoading(false); // Stop loading once the first update is received
+        setLoading(false);
       },
       (error) => {
         console.error("Error fetching history in real-time:", error);
@@ -31,7 +31,6 @@ const History = ({ tableId }) => {
       }
     );
 
-    // Clean up the listener on component unmount
     return () => unsubscribe();
   }, [tableId]);
 
@@ -49,14 +48,30 @@ const History = ({ tableId }) => {
     );
   }
 
+  const displayedHistory = showAll ? history : history.slice(0, 8);
+
   return (
-    <div className="p-4">
+    <div className="p-4 relative">
       <h1 className="text-2xl font-bold text-center mb-4">היסטוריית השולחן</h1>
-      <ul className="space-y-2 bg-white shadow-md p-4 rounded-lg">
-        {history.map((entry) => (
+      <ul className="space-y-2 bg-white shadow-md p-4 rounded-lg relative overflow-hidden">
+        {displayedHistory.map((entry) => (
           <HistoryEntry key={entry.id} entry={entry} />
         ))}
+        {/* Visual indicator (faded effect) when more history exists */}
+        {!showAll && history.length > 8 && (
+          <div className="absolute bottom-0 left-0 w-full h-12 bg-gradient-to-t from-white to-transparent pointer-events-none" />
+        )}
       </ul>
+
+      {/* Toggle button to show more/less history */}
+      {history.length > 8 && (
+        <button
+          onClick={() => setShowAll(!showAll)}
+          className="mt-4 w-full text-center text-blue-600 font-semibold"
+        >
+          {showAll ? "הסתר היסטוריה" : "הצג את כל ההיסטוריה"}
+        </button>
+      )}
     </div>
   );
 };
