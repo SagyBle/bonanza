@@ -1,6 +1,10 @@
 # BonanzApp
 
-BonanzApp is a web application built with modern web technologies. This README provides instructions on how to run, build, and deploy the project.
+BonanzApp is a modern web application built with React, Firebase, and Tailwind CSS. It offers an intuitive interface for managing poker tables, calculating settlements, and handling unions. The project leverages real-time data with Firebase Firestore, dynamic UI components, and responsive design to deliver a seamless experience across devices.
+
+This README provides instructions on how to run, build, and deploy the project.
+
+Enjoy exploring BonanzApp!
 
 ## 🚀 Getting Started
 
