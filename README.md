@@ -30,7 +30,7 @@ npm install
 To run the project in development mode:
 
 ```sh
-npm start
+npm run start
 ```
 
 This starts the development server. Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
@@ -85,16 +85,11 @@ SSL is managed using **Cloudflare** to ensure secure HTTPS connections.
 This project is built using the following core libraries:
 
 - **React.js** – Frontend framework
-- **Next.js** (if applicable) – Server-side rendering
-- **TypeScript** (if applicable) – Static typing
-- **Styled Components / Tailwind CSS** – Styling
-- **React Router** – Navigation
-- **Redux / Zustand / Context API** – State management (mention whichever is used)
-- **Axios / Fetch API** – API requests
-- **Framer Motion** – Animations (if applicable)
-- **Socket.IO** – Real-time features (if applicable)
 
-_(Add/remove any libraries as needed.)_
+- **Shadcn / magicui / CSS / Tailwind** – Styling
+- **React Router** – Navigation
+- **Fetch API** – API requests
+- **Framer Motion** – Animations (if applicable)
 
 ---
 
@@ -114,9 +109,9 @@ Contributions are welcome! Feel free to open an issue or submit a pull request.
 
 If you have any questions, feel free to reach out.
 
-- **Your Name**: [Your Email](mailto:your@email.com)
-- **GitHub**: [Your GitHub Profile](https://github.com/your-username)
-- **Website**: [Your Website](https://yourwebsite.com)
+- **Your Name**: [Your Email](blecher.sagy@gmail.com)
+- **GitHub**: [Your GitHub Profile](https://github.com/sagyble)
+- **Website**: [Your Website](https://alexisomega.com)
 
 ---
 
