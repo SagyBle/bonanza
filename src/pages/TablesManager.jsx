@@ -83,9 +83,9 @@ const TablesManager = ({ isManagerMode }) => {
         prevTables.filter((table) => table.id !== tableToDelete)
       );
       if (activeTable?.id === tableToDelete) {
-        setActiveTable(null); // Clear active table if it's deleted
+        setActiveTable(null);
       }
-      setShowConfirmDelete(false); // Close confirmation modal
+      setShowConfirmDelete(false);
     } catch (error) {
       console.error("Error deleting table:", error);
     }
@@ -93,7 +93,7 @@ const TablesManager = ({ isManagerMode }) => {
 
   const handleDeleteClick = (tableId) => {
     setTableToDelete(tableId);
-    setShowConfirmDelete(true); // Show confirmation popup
+    setShowConfirmDelete(true);
   };
 
   return (
