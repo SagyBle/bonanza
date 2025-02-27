@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { collection, getDocs, doc, updateDoc } from "firebase/firestore";
 import { db } from "../config/firebase";
+import PrevCurrInput from "@/components/PrevCurrInput";
 
 const Sumup = () => {
   const { tableId } = useParams();
@@ -85,29 +86,65 @@ const Sumup = () => {
         const remainder = chips % 50;
 
         let donatedToLeftovers = 0;
+        let takeFromLeftovers = 0;
         let joiningLeftovers = false;
+        let originalChipsAmount = chips;
+        let afterLeftoversChipsAmount = chips; // Default to original
 
         if (disabledInputs[player.id]) {
-          if (remainder >= 10) {
+          if (remainder === 0) {
+            // 🟢 Case: remainder = 0 → No donation, no taking, not participating.
+            donatedToLeftovers = 0;
+            takeFromLeftovers = 0;
+            joiningLeftovers = false;
+          } else if (1 <= remainder && remainder <= 9) {
+            // 🟠 Case: remainder between 1-9 → Donates remainder, not taking, not participating.
+            donatedToLeftovers = remainder;
+            takeFromLeftovers = 0;
+            joiningLeftovers = false;
+            acc.total += remainder;
+          } else if (10 <= remainder && remainder <= 40) {
+            // 🔵 Case: remainder between 10-40 → Donates remainder, not taking, participates.
+            donatedToLeftovers = remainder;
+            takeFromLeftovers = 0;
+            joiningLeftovers = true;
             acc.total += remainder;
             acc.participants.push({
               id: player.id,
               name: player.name,
               remainder,
             });
-            donatedToLeftovers = remainder;
-            joiningLeftovers = true;
-          } else {
-            donatedToLeftovers = remainder;
+          } else if (41 <= remainder && remainder <= 49) {
+            // 🔴 Case: remainder between 41-49 → No donation, takes (50 - remainder), not participating.
+            donatedToLeftovers = 0;
+            takeFromLeftovers = 50 - remainder;
+            joiningLeftovers = false;
+            acc.total -= takeFromLeftovers;
+            acc.takingFromLeftovers.push({
+              id: player.id,
+              name: player.name,
+              taken: takeFromLeftovers,
+            });
           }
+
+          afterLeftoversChipsAmount =
+            chips - donatedToLeftovers + takeFromLeftovers;
         }
 
         player.donatedToLeftovers = donatedToLeftovers;
+        player.takeFromLeftovers = takeFromLeftovers;
         player.joiningLeftovers = joiningLeftovers;
+        player.originalChipsAmount = originalChipsAmount;
+        player.afterLeftoversChipsAmount = afterLeftoversChipsAmount;
 
         return acc;
       },
-      { total: 0, participants: [], donatingButNotParticipating: [] }
+      {
+        total: 0,
+        participants: [],
+        donatingButNotParticipating: [],
+        takingFromLeftovers: [],
+      }
     );
 
     const donatingButNotParticipating = players
@@ -120,6 +157,14 @@ const Sumup = () => {
         donated: player.donatedToLeftovers,
       }));
 
+    const takingFromLeftovers = players
+      .filter((player) => player.takeFromLeftovers > 0)
+      .map((player) => ({
+        id: player.id,
+        name: player.name,
+        taken: player.takeFromLeftovers,
+      }));
+
     // Include donations from players who donate but don’t participate in the total leftovers
     leftoverDetails.total += donatingButNotParticipating.reduce(
       (sum, player) => sum + player.donated,
@@ -129,6 +174,7 @@ const Sumup = () => {
     setLeftovers({
       ...leftoverDetails,
       donatingButNotParticipating,
+      takingFromLeftovers, // Players who took from leftovers
     });
   }, [chipInputs, disabledInputs, players]);
 
@@ -154,21 +200,34 @@ const Sumup = () => {
       if (player.donatedToLeftovers) {
         finalTotalChips -= player.donatedToLeftovers;
       }
+      if (player.takeFromLeftovers) {
+        finalTotalChips += player.takeFromLeftovers;
+      }
 
       return {
         id: player.id,
         name: player.name,
+        originalChipsAmount: player.originalChipsAmount, // Save the original amount before leftovers
         finalTotalChips,
+        afterLeftoversChipsAmount: finalTotalChips, // Save the adjusted amount after leftovers
         isParticipatesLeftovers: player.joiningLeftovers, // Add participation status
       };
     });
 
     // Prepare Firebase update tasks for each player
     const batchUpdates = updatedPlayers.map(
-      ({ id, finalTotalChips, isParticipatesLeftovers }) => {
+      ({
+        id,
+        finalTotalChips,
+        afterLeftoversChipsAmount,
+        originalChipsAmount,
+        isParticipatesLeftovers,
+      }) => {
         const playerDocRef = doc(db, `tables/${tableId}/players`, id);
         return updateDoc(playerDocRef, {
           finalTotalChips,
+          afterLeftoversChipsAmount,
+          originalChipsAmount,
           isParticipatesLeftovers,
         });
       }
@@ -217,23 +276,44 @@ const Sumup = () => {
               {player.name}
               {player.joiningLeftovers && " - משתתף בשאריות!"}
             </h3>
+            {/* player.donatedToLeftovers = donatedToLeftovers;
+        player.takeFromLeftovers = takeFromLeftovers;
+        player.joiningLeftovers = joiningLeftovers;
+        player.originalChipsAmount = originalChipsAmount;
+        player.afterLeftoversChipsAmount = afterLeftoversChipsAmount; */}
             <p className="text-gray-700">כניסות: {player.entries}</p>
+            <p>donatedToLeftovers: {player.donatedToLeftovers}</p>
+            <p>takeFromLeftovers: {player.takeFromLeftovers}</p>
+            <p>joiningLeftovers: {JSON.stringify(player.joiningLeftovers)}</p>
+            <p>originalChipsAmount: {player.originalChipsAmount}</p>
+            <p>afterLeftoversChipsAmount: {player.afterLeftoversChipsAmount}</p>
+
             <label className="block mt-4">
               <span className="text-gray-600" dir="rtl">
                 ז׳יטונים שנשארו:
               </span>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={
-                  chipInputs[player.id] !== undefined
-                    ? chipInputs[player.id]
-                    : ""
-                }
-                onChange={(e) => handleInputChange(player.id, e.target.value)}
-                className="mt-1 block w-full p-2 border rounded-md text-gray-700"
-                disabled={disabledInputs[player.id]}
-              />
+
+              {disabledInputs[player.id] &&
+              player.originalChipsAmount !==
+                player.afterLeftoversChipsAmount ? (
+                <PrevCurrInput
+                  finalAmount={player.afterLeftoversChipsAmount}
+                  originalAmount={player.originalChipsAmount}
+                />
+              ) : (
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={
+                    chipInputs[player.id] !== undefined
+                      ? chipInputs[player.id]
+                      : ""
+                  }
+                  onChange={(e) => handleInputChange(player.id, e.target.value)}
+                  className="mt-1 block w-full p-2 border rounded-md text-gray-700"
+                  disabled={disabledInputs[player.id]}
+                />
+              )}
             </label>
             <button
               onClick={() => toggleInputState(player.id)}
@@ -248,28 +328,33 @@ const Sumup = () => {
 
             <div className="mt-4 text-sm">
               {player.joiningLeftovers ? (
+                // ✅ Case 1: Participating in Leftovers
                 <p className="text-green-600">
-                  <span className="font-semibold">משתתף בשאריות</span>
-                  {player.donatedToLeftovers ? (
-                    <span className="ml-2 text-green-800">
-                      {" "}
-                      ותורם: {player.donatedToLeftovers}
-                    </span>
-                  ) : (
-                    <span className="ml-2 text-gray-600">ולא תורם כלום</span>
-                  )}
+                  <span className="font-semibold">משתתף בשאריות </span>
+                  <span className="ml-1 font-semibold text-green-800">
+                    ותורם {player.donatedToLeftovers} ז'יטונים
+                  </span>
                 </p>
-              ) : player.donatedToLeftovers ? (
+              ) : player.donatedToLeftovers > 0 ? (
+                // ✅ Case 2: Donating to Leftovers but Not Participating
                 <p className="text-yellow-600">
-                  <span className="font-semibold">
-                    תורם לשאריות אך לא משתתף
+                  <span className="font-semibold">תורם </span>
+                  <span className="ml-1 font-semibold text-yellow-800">
+                    {player.donatedToLeftovers} ז'יטונים
                   </span>
-                  <span className="ml-2 text-yellow-800">
-                    {" "}
-                    ותורם: {player.donatedToLeftovers}
+                  <span className="ml-1">אך לא משתתף בשאריות</span>
+                </p>
+              ) : player.takeFromLeftovers > 0 ? (
+                // ✅ Case 3: Taking from Leftovers but Not Participating
+                <p className="text-blue-600">
+                  <span className="font-semibold">לוקח מהשאריות </span>
+                  <span className="ml-1 font-semibold text-blue-800">
+                    {player.takeFromLeftovers} ז'יטונים
                   </span>
+                  <span className="ml-1">ולא משתתף בשאריות</span>
                 </p>
               ) : (
+                // ✅ Case 4: Not Participating & Not Donating
                 disabledInputs[player.id] && (
                   <p className="text-red-600">
                     <span className="font-semibold">לא משתתף בשאריות</span>
