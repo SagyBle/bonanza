@@ -315,7 +315,7 @@ const Table = ({ isManagerMode, soundEnabled }) => {
 
   return (
     <div className="p-6 max-w-4xl mx-auto bg-white ">
-      {/* <AddFoodExpenses tableId={tableId} /> */}
+      <AddFoodExpenses tableId={tableId} />
 
       {/* Display the title and description of the table */}
       <h2 className="text-2xl font-bold mb-4">

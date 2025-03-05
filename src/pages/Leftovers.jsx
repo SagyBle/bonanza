@@ -16,7 +16,7 @@ const Leftovers = ({ isManagerMode }) => {
   const [players, setPlayers] = useState([]);
   const [selectedPlayerId, setSelectedPlayerId] = useState(null);
   const [leftoversAmount, setLeftoversAmount] = useState(0);
-  const [showMessage, setShowMessage] = useState(false);
+  const [showMessage, setShowMessage] = useState("");
 
   useEffect(() => {
     const fetchPlayersAndLeftovers = async () => {
@@ -39,9 +39,22 @@ const Leftovers = ({ isManagerMode }) => {
         setPlayers(playersData);
         setLeftoversAmount(leftoversData);
 
-        // Show a message and redirect if no players are found
-        if (playersData.length === 0) {
-          setShowMessage(true);
+        // Show message if no players or no leftovers exist
+        if (playersData.length === 0 && leftoversData === 0) {
+          setShowMessage(
+            "אין משתתפים לשאריות ואין שאריות לחלק, עוברים לספליט..."
+          );
+        } else if (playersData.length === 0) {
+          setShowMessage(
+            "אין משתתפים לשאריות, השולחן מועבר אוטומטית לחישוב ספליט..."
+          );
+        } else if (leftoversData === 0) {
+          setShowMessage(
+            "אין שאריות לחלק, השולחן מועבר אוטומטית לחישוב ספליט..."
+          );
+        }
+
+        if (playersData.length === 0 || leftoversData === 0) {
           setTimeout(() => {
             navigate(`/split/${tableId}`);
           }, 2500); // Redirect after 2.5 seconds
@@ -90,7 +103,7 @@ const Leftovers = ({ isManagerMode }) => {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <h2 className="text-xl font-semibold text-gray-700" dir="rtl">
-          אין משתתפים לשאריות, השולחן מועבר אוטומטית לחישוב ספליט...
+          {showMessage}
         </h2>
       </div>
     );

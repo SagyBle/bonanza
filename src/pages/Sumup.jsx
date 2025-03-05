@@ -93,33 +93,26 @@ const Sumup = () => {
 
         if (disabledInputs[player.id]) {
           if (remainder === 0) {
-            // 🟢 Case: remainder = 0 → No donation, no taking, not participating.
             donatedToLeftovers = 0;
             takeFromLeftovers = 0;
             joiningLeftovers = false;
           } else if (1 <= remainder && remainder <= 9) {
-            // 🟠 Case: remainder between 1-9 → Donates remainder, not taking, not participating.
             donatedToLeftovers = remainder;
             takeFromLeftovers = 0;
             joiningLeftovers = false;
-            acc.total += remainder;
           } else if (10 <= remainder && remainder <= 40) {
-            // 🔵 Case: remainder between 10-40 → Donates remainder, not taking, participates.
             donatedToLeftovers = remainder;
             takeFromLeftovers = 0;
             joiningLeftovers = true;
-            acc.total += remainder;
             acc.participants.push({
               id: player.id,
               name: player.name,
               remainder,
             });
           } else if (41 <= remainder && remainder <= 49) {
-            // 🔴 Case: remainder between 41-49 → No donation, takes (50 - remainder), not participating.
             donatedToLeftovers = 0;
             takeFromLeftovers = 50 - remainder;
             joiningLeftovers = false;
-            acc.total -= takeFromLeftovers;
             acc.takingFromLeftovers.push({
               id: player.id,
               name: player.name,
@@ -147,34 +140,16 @@ const Sumup = () => {
       }
     );
 
-    const donatingButNotParticipating = players
-      .filter(
-        (player) => player.donatedToLeftovers > 0 && !player.joiningLeftovers
-      )
-      .map((player) => ({
-        id: player.id,
-        name: player.name,
-        donated: player.donatedToLeftovers,
-      }));
-
-    const takingFromLeftovers = players
-      .filter((player) => player.takeFromLeftovers > 0)
-      .map((player) => ({
-        id: player.id,
-        name: player.name,
-        taken: player.takeFromLeftovers,
-      }));
-
-    // Include donations from players who donate but don’t participate in the total leftovers
-    leftoverDetails.total += donatingButNotParticipating.reduce(
-      (sum, player) => sum + player.donated,
+    // 🔥 Correct leftovers calculation: Sum donations & subtract takings
+    const totalLeftovers = players.reduce(
+      (sum, player) =>
+        sum + player.donatedToLeftovers - player.takeFromLeftovers,
       0
     );
 
     setLeftovers({
       ...leftoverDetails,
-      donatingButNotParticipating,
-      takingFromLeftovers, // Players who took from leftovers
+      total: totalLeftovers, // ✅ Make sure this total is correctly calculated
     });
   }, [chipInputs, disabledInputs, players]);
 
@@ -250,7 +225,24 @@ const Sumup = () => {
 
   return (
     <div className="p-6 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6">סיכום השולחן</h1>
+      <h1 className="text-3xl font-bold mb-6 text-center">סיכום השולחן</h1>
+
+      <div
+        className="mb-6 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-900 rounded-lg"
+        dir="rtl"
+      >
+        <h2 className="text-lg font-semibold">🔔 שימו לב!</h2>
+        <p className="mt-1">
+          יש להכניס את כמות הז'יטונים המדוייקת שיש לכל שחקן.
+        </p>
+        <p className="mt-1">
+          המערכת תחשב עבור כל שחקן אם עליו לקחת מהשאריות, לתרום או לא לבצע
+          שינוי.
+        </p>
+        <p className="mt-1 font-semibold">
+          אין צורך לבצע חישובים בעצמכם – המערכת תעשה זאת באופן אוטומטי! ✅
+        </p>
+      </div>
 
       <div className="mb-6">
         <h2 className="text-xl font-semibold" dir="rtl">
@@ -397,7 +389,7 @@ const Sumup = () => {
         <h2 className="text-l font-semibold text-blue-700">
           סכום שאריות: {leftovers.total}
         </h2>
-        {leftovers.participants && leftovers.participants.length > 0 && (
+        {/* {leftovers.participants && leftovers.participants.length > 0 && (
           <>
             <h3 className="text-md font-medium text-blue-600" dir="rtl">
               שחקנים שמשתתפים בשאריות:
@@ -410,9 +402,9 @@ const Sumup = () => {
               ))}
             </ul>
           </>
-        )}
+        )} */}
 
-        {leftovers.donatingButNotParticipating &&
+        {/* {leftovers.donatingButNotParticipating &&
           leftovers.donatingButNotParticipating.length > 0 && (
             <>
               <h3 className="text-md font-small text-gray-400 mt-4" dir="rtl">
@@ -426,7 +418,7 @@ const Sumup = () => {
                 ))}
               </ul>
             </>
-          )}
+          )} */}
       </div>
 
       <button
