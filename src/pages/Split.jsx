@@ -5,12 +5,14 @@ import { db } from "../config/firebase";
 import { minimalSettlement } from "../utils/balance.utils";
 import whatsappIcon from "../assets/icons/whatsapp.svg";
 import Paybox from "../components/Paybox";
+import AddFoodExpenses from "@/components/AddFoodExpenses";
 
 const Split = () => {
   const { tableId } = useParams();
   const [players, setPlayers] = useState([]);
   const [generalPlayers, setGeneralPlayers] = useState([]);
   const [transactions, setTransactions] = useState([]);
+  const [foodTransactions, setFoodTransactions] = useState([]);
 
   useEffect(() => {
     const fetchPlayers = async () => {
@@ -85,6 +87,55 @@ const Split = () => {
     setTransactions(formattedTransactions);
   };
 
+  const calculateFoodSplit = async () => {
+    try {
+      const foodExpensesRef = collection(db, `tables/${tableId}/foodExpenses`);
+      const foodExpensesSnapshot = await getDocs(foodExpensesRef);
+      const foodExpenses = foodExpensesSnapshot.docs.map((doc) => doc.data());
+
+      if (foodExpenses.length === 0) {
+        alert("אין חישובי אוכל לבצע.");
+        return;
+      }
+
+      const balance = {};
+
+      foodExpenses.forEach((expense) => {
+        const payer = expense.totalPayer;
+        const totalAmount = expense.totalAmount;
+        const participants = expense.subOrders;
+
+        if (!balance[payer]) balance[payer] = 0;
+        balance[payer] += totalAmount;
+
+        participants.forEach(({ playerId, amount }) => {
+          if (!balance[playerId]) balance[playerId] = 0;
+          balance[playerId] -= amount;
+        });
+      });
+
+      const playerObjects = Object.entries(balance).map(
+        ([playerId, balance]) => ({
+          user: playerId,
+          buy_ins: 0,
+          final_value: balance,
+        })
+      );
+
+      const txs = minimalSettlement(playerObjects);
+
+      const formattedFoodTransactions = txs.map(([debtor, creditor, amt]) => ({
+        debtor: getPlayerDetails(debtor),
+        creditor: getPlayerDetails(creditor),
+        amount: amt,
+      }));
+
+      setFoodTransactions(formattedFoodTransactions);
+    } catch (error) {
+      console.error("Error calculating food split:", error);
+    }
+  };
+
   const sendToWhatsApp = () => {
     if (transactions.length === 0) {
       alert("אין חישובים לשליחה!");
@@ -110,6 +161,8 @@ const Split = () => {
       <h1 className="text-3xl font-bold mb-6" dir="rtl">
         חישוב העברות
       </h1>
+
+      <AddFoodExpenses tableId={tableId} />
 
       <div className="mb-6">
         <h2 className="text-xl font-semibold" dir="rtl">
@@ -144,6 +197,13 @@ const Split = () => {
         </button>
       </div>
 
+      <button
+        onClick={calculateFoodSplit}
+        className="mt-4 py-2 px-4 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-white transition"
+      >
+        חשב העברות אוכל
+      </button>
+
       {transactions.length > 0 && (
         <div className="mt-8">
           <h2 className="text-xl font-semibold mb-4" dir="rtl">
@@ -157,13 +217,12 @@ const Split = () => {
                 dir="rtl"
               >
                 <p className="text-gray-700">
-                  <span className="font-bold">{tx.debtor.name}</span> משלם ל{" "}
+                  <span className="font-bold">{tx.debtor.name}</span> משלם ל
                   <span className="font-bold">{tx.creditor.name}</span> סכום של{" "}
-                  <span className="font-bold">
-                    {tx.amount} {"ש״ח "}
-                  </span>
+                  <span className="font-bold">{tx.amount} ש״ח</span>
                 </p>
 
+                {/* אפשר להחזיר את זה אם תחליט להשתמש ב-Paybox */}
                 {/* <Paybox
                   amount={tx.amount}
                   creditorName={tx.creditor.name}
@@ -183,6 +242,29 @@ const Split = () => {
               <img src={whatsappIcon} alt="WhatsApp" className="w-5 h-5 mr-2" />
             </button>
           </div>
+        </div>
+      )}
+
+      {foodTransactions.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-xl font-semibold mb-4" dir="rtl">
+            תוצאות חישוב אוכל:
+          </h2>
+          <ul className="space-y-4">
+            {foodTransactions.map((tx, index) => (
+              <li
+                key={index}
+                className="p-4 border rounded-lg shadow-sm bg-white border-gray-300"
+                dir="rtl"
+              >
+                <p className="text-gray-700">
+                  <span className="font-bold">{tx.debtor.name}</span> משלם ל{" "}
+                  <span className="font-bold">{tx.creditor.name}</span>{" "}
+                  <span className="font-bold">{tx.amount} ש״ח</span>
+                </p>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>

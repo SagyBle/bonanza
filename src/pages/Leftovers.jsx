@@ -17,6 +17,7 @@ const Leftovers = ({ isManagerMode }) => {
   const [selectedPlayerId, setSelectedPlayerId] = useState(null);
   const [leftoversAmount, setLeftoversAmount] = useState(0);
   const [showMessage, setShowMessage] = useState("");
+  const [popup, setPopup] = useState({ show: false, message: "", type: "" });
 
   useEffect(() => {
     const fetchPlayersAndLeftovers = async () => {
@@ -69,7 +70,11 @@ const Leftovers = ({ isManagerMode }) => {
 
   const handleSubmit = async () => {
     if (!selectedPlayerId) {
-      alert("Please select a player.");
+      setPopup({
+        show: true,
+        message: "יש לבחור שחקן לפני שממשיכים!",
+        type: "error",
+      });
       return;
     }
 
@@ -91,11 +96,23 @@ const Leftovers = ({ isManagerMode }) => {
         finalTotalChips: updatedTotalChips,
       });
 
-      alert("Leftovers have been assigned to the player!");
-      navigate(`/split/${tableId}`);
+      setPopup({
+        show: true,
+        message: `השאריות הועברו לשחקן: ${selectedPlayer.name} (₪${leftoversAmount})!`,
+        type: "success",
+      });
+
+      // Wait 2 seconds before redirecting
+      setTimeout(() => {
+        navigate(`/split/${tableId}`);
+      }, 2000);
     } catch (error) {
       console.error("Error updating player:", error);
-      alert("An error occurred while updating the player's data.");
+      setPopup({
+        show: true,
+        message: "אירעה שגיאה בעת עדכון נתוני השחקן.",
+        type: "error",
+      });
     }
   };
 
@@ -117,7 +134,7 @@ const Leftovers = ({ isManagerMode }) => {
 
       <div className="mb-6">
         <h2 className="text-xl font-semibold" dir="rtl">
-          סכום שאריות: {leftoversAmount}
+          סכום שאריות: ₪{leftoversAmount}
         </h2>
       </div>
 
@@ -160,6 +177,28 @@ const Leftovers = ({ isManagerMode }) => {
           סיים ועבור לספליט
         </button>
       </div>
+
+      {/* Popup Modal */}
+      {popup.show && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96 text-center">
+            <h3
+              className={`text-xl font-semibold ${
+                popup.type === "success" ? "text-green-500" : "text-red-500"
+              }`}
+            >
+              {popup.type === "success" ? "✅ הצלחה" : "❌ שגיאה"}
+            </h3>
+            <p className="text-gray-700 mt-2">{popup.message}</p>
+            <button
+              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+              onClick={() => setPopup({ show: false, message: "", type: "" })}
+            >
+              סגור
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

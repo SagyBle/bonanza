@@ -24,7 +24,8 @@ import History from "../components/hisotry/History";
 import Whatsapp from "../components/whatsapp/Whatsapp";
 import SumupPlayerModal from "../components/SumupPlayer";
 import { HistoryObjectTypes } from "../constants/enums/history.enum";
-import runawayIcon from "../assets/icons/runaway.svg";
+import runawayIcon from "../assets/icons/runningaway.svg";
+
 import SumupTable from "../components/SumupTable";
 import CloseTableModal from "../components/CloseTableModal";
 import DropdownWithSearch from "../components/DropdownWithSearch";
@@ -318,18 +319,21 @@ const Table = ({ isManagerMode, soundEnabled }) => {
       <AddFoodExpenses tableId={tableId} />
 
       {/* Display the title and description of the table */}
-      <h2 className="text-2xl font-bold mb-4">
-        {tableData.title ||
-          // `Table of the day ${new Date().toLocaleDateString()}`}
-
-          `שולחן של ${new Date().toLocaleDateString("he-IL", {
-            weekday: "long",
-          })} ה${new Date().toLocaleDateString("he-IL", {
-            day: "numeric",
-            month: "numeric",
-          })}`}
-      </h2>
-      <p className="mb-4">{tableData.description || ""}</p>
+      <div className=" text-white p-6 pb-0 rounded-lg shadow-lg text-center">
+        <h2 className="text-3xl font-bold text-blue-500">
+          {tableData.title
+            ? `🃏 ${tableData.title}`
+            : `🃏 שולחן יום ${new Date().toLocaleDateString("he-IL", {
+                weekday: "long",
+              })} - ${new Date().toLocaleDateString("he-IL", {
+                day: "numeric",
+                month: "numeric",
+              })}`}
+        </h2>
+        {tableData.description && (
+          <p className="mt-2 text-gray-300 text-lg">{tableData.description}</p>
+        )}
+      </div>
 
       {isManagerMode && (
         <>
@@ -350,8 +354,8 @@ const Table = ({ isManagerMode, soundEnabled }) => {
       ) : players.length === 0 ? (
         <p>אין שחקנים בשולחן הזה</p>
       ) : (
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h3 className="mt-4 text-lg font-medium text-right mb-4">שחקנים</h3>
+        <div className="bg-white p-6 pt-0 rounded-lg shadow-md">
+          <h3 className="text-lg font-medium text-right mb-4">שחקנים</h3>
           <ul className="list-none p-0 space-y-4">
             {players.map((player) => (
               <li
@@ -409,8 +413,12 @@ const Table = ({ isManagerMode, soundEnabled }) => {
                         )}
                     </>
                   ) : (
-                    <span className="text-m text-gray-800 flex justify-center gap-2 pt-1">
-                      <img alt="runawayicon" src={runawayIcon} />
+                    <span className="text-m text-gray-800 flex items-center justify-center gap-2 pt-1">
+                      <img
+                        className="w-10"
+                        alt="runawayicon"
+                        src={runawayIcon}
+                      />
                       {`יצא עם ${
                         player.finalTotalChips < 0 ? "-" : ""
                       }${Math.abs(player.finalTotalChips)}`}{" "}

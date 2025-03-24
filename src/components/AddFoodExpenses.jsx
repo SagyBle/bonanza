@@ -15,6 +15,10 @@ const AddFoodExpenses = ({ tableId }) => {
   const [subOrderPayer, setSubOrderPayer] = useState("");
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [foodExpenses, setFoodExpenses] = useState([]);
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [splitters, setSplitters] = useState([]);
+  const [selectedExpense, setSelectedExpense] = useState(null); // Track selected expense
+  const [isEditMode, setIsEditMode] = useState(false); // Track if editing
 
   useEffect(() => {
     const fetchPlayers = async () => {
@@ -37,11 +41,12 @@ const AddFoodExpenses = ({ tableId }) => {
   useEffect(() => {
     const fetchFoodExpenses = async () => {
       try {
-        const expensesRef = collection(db, "AddFoodExpenses");
+        const expensesRef = collection(db, `tables/${tableId}/foodExpenses`);
         const expenseDocs = await getDocs(expensesRef);
-        const expensesList = expenseDocs.docs
-          .map((doc) => ({ id: doc.id, ...doc.data() }))
-          .filter((expense) => expense.tableId === tableId); // Filter by tableId
+        const expensesList = expenseDocs.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
 
         setFoodExpenses(expensesList);
       } catch (error) {
@@ -57,7 +62,14 @@ const AddFoodExpenses = ({ tableId }) => {
       (sum, order) => sum + order.amount,
       0
     );
-    setRemainingAmount(totalAmount - totalSubOrderAmount);
+    let newRemainingAmount = totalAmount - totalSubOrderAmount;
+
+    // Round to zero if the remaining amount is less than 1
+    if (Math.abs(newRemainingAmount) < 1) {
+      newRemainingAmount = 0;
+    }
+
+    setRemainingAmount(newRemainingAmount);
   }, [subOrders, totalAmount]);
 
   const handleAddSubOrder = () => {
@@ -69,10 +81,82 @@ const AddFoodExpenses = ({ tableId }) => {
       details: subOrderDetails,
     };
 
-    setSubOrders((prev) => [...prev, newSubOrder]);
+    setSubOrders((prevSubOrders) => {
+      const newSubOrders = [...prevSubOrders, newSubOrder]; // Add the new order
+
+      setSplitters((prevSplitters) => {
+        // Keep existing splitters and check if we need to update them
+        const updatedSplitters = prevSplitters.filter(
+          (splitter) => splitter.playerId !== subOrderPayer
+        );
+
+        console.log("Updated Splitters after addition:", { updatedSplitters });
+
+        // Calculate the sum of amounts of non-splitters
+        const nonSplittersTotal = newSubOrders
+          .filter((order) => !order.split)
+          .reduce((sum, order) => sum + order.amount, 0);
+
+        console.log({ totalAmount, updatedSplitters });
+
+        // Compute the new amount for splitters after reducing the new suborder's amount
+        const remainingSplitAmount = totalAmount - nonSplittersTotal;
+        const newSplitterAmount =
+          updatedSplitters.length > 0
+            ? remainingSplitAmount / updatedSplitters.length
+            : 0;
+
+        console.log(
+          "Assigning new split amounts after addition:",
+          newSplitterAmount
+        );
+
+        // Update subOrders immutably to reflect new split amounts
+        const updatedSubOrders = newSubOrders.map((subOrder) =>
+          subOrder.split ? { ...subOrder, amount: newSplitterAmount } : subOrder
+        );
+
+        setSubOrders(updatedSubOrders); // Ensure subOrders are updated immutably
+
+        return updatedSplitters;
+      });
+
+      return newSubOrders;
+    });
+
     setSubOrderPayer("");
     setAmount("");
     setSubOrderDetails("");
+  };
+
+  const handleSplitEqually = () => {
+    if (remainingAmount <= 0 || availablePlayersForSubOrder.length === 0)
+      return;
+
+    const splitAmount = remainingAmount / availablePlayersForSubOrder.length;
+
+    const newSubOrders = availablePlayersForSubOrder.map((player) => ({
+      playerId: player.id,
+      amount: parseFloat(splitAmount.toFixed(2)), // Ensure two decimal precision
+      details: "חלק שווה",
+      split: true,
+    }));
+    setSplitters(newSubOrders);
+
+    setSubOrders((prev) => [...prev, ...newSubOrders]);
+  };
+
+  const clearForm = () => {
+    setTitle("");
+    setTotalPayer("");
+    setTotalAmount(0);
+    setOrderDetails("");
+    setSubOrders([]);
+    setRemainingAmount(0);
+    setAmount("");
+    setSubOrderDetails("");
+    setSubOrderPayer("");
+    setIsFormVisible(false);
   };
 
   const handleFinishOrder = async () => {
@@ -88,22 +172,22 @@ const AddFoodExpenses = ({ tableId }) => {
         totalAmount,
         orderDetails,
         subOrders,
-        tableId,
         createdAt: new Date().toISOString(),
       };
 
       const docRef = await addDoc(
-        collection(db, "AddFoodExpenses"),
+        collection(db, `tables/${tableId}/foodExpenses`),
         foodExpenseData
       );
 
-      // Update local state with the new order
       setFoodExpenses((prev) => [
         ...prev,
         { id: docRef.id, ...foodExpenseData },
       ]);
 
-      alert("ההזמנה נוספה בהצלחה!");
+      clearForm();
+      setShowSuccessPopup(true);
+      setTimeout(() => setShowSuccessPopup(false), 3000);
     } catch (error) {
       console.error("שגיאה בהוספת הוצאה:", error);
     }
@@ -114,48 +198,195 @@ const AddFoodExpenses = ({ tableId }) => {
   );
 
   const handleRemoveSubOrder = (index) => {
-    setSubOrders((prev) => prev.filter((_, i) => i !== index));
+    setSubOrders((prevSubOrders) => {
+      const removedOrder = prevSubOrders[index]; // Get the removed player's order
+      const newSubOrders = prevSubOrders.filter((_, i) => i !== index); // Remove the order
+
+      setSplitters((prevSplitters) => {
+        const updatedSplitters = prevSplitters.filter(
+          (splitter) => splitter.playerId !== removedOrder.playerId
+        );
+
+        // Calculate the sum of amounts of non-splitters
+        const nonSplittersTotal = newSubOrders
+          .filter((order) => !order.split)
+          .reduce((sum, order) => sum + order.amount, 0);
+
+        // Log the calculated number
+
+        const remainingSplitAmount = totalAmount - nonSplittersTotal;
+        console.log(
+          "assign to each new splitters:",
+          remainingSplitAmount / updatedSplitters?.length
+        );
+        const newSplitterAmount =
+          remainingSplitAmount / updatedSplitters?.length;
+
+        newSubOrders.forEach((subOrder) =>
+          subOrder.split ? (subOrder.amount = newSplitterAmount) : null
+        );
+
+        return updatedSplitters;
+      });
+
+      return newSubOrders;
+    });
   };
+
+  const keepEqualityBetweenSplitters = () => {};
 
   return (
     <>
+      {showSuccessPopup && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
+          <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2">
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+            <span>הזמנת האוכל נוספה בהצלחה!</span>
+          </div>
+        </div>
+      )}
+
       <button
         onClick={() => setIsFormVisible((prev) => !prev)}
-        className={`w-full py-3 text-white rounded-lg transition ${
-          isFormVisible
-            ? "bg-red-500 hover:bg-red-600"
-            : "bg-blue-500 hover:bg-blue-600"
-        }`}
+        className={`w-full py-2 px-4 text-white rounded-md transition text-base font-medium shadow-md flex items-center justify-center gap-2
+    ${
+      isFormVisible
+        ? "bg-red-500 hover:bg-red-600"
+        : "bg-blue-500 hover:bg-blue-600"
+    }
+  `}
       >
-        {isFormVisible ? "סגור הזמנת אוכל" : "הוספת הזמנת אוכל"}
+        {isFormVisible ? (
+          <>
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+            סגור הזמנת אוכל
+          </>
+        ) : (
+          <>
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 4v16m8-8H4"
+              />
+            </svg>
+            הוספת הזמנת אוכל
+          </>
+        )}
       </button>
       {foodExpenses.length > 0 && (
         <div
-          className="mb-6 p-4 bg-gray-800 text-white rounded-lg shadow-lg"
+          className="mt-4 p-4 bg-gray-800 text-white rounded-lg shadow-lg"
           dir="rtl"
         >
           <h2 className="text-xl font-bold mb-3 text-blue-300">
-            הזמנות אוכל קודמות
+            הזמנות אוכל קיימות
           </h2>
           <ul className="space-y-3">
             {foodExpenses.map((expense) => (
-              <li
-                key={expense.id}
-                className="p-3 bg-gray-900 rounded-md shadow-md"
-              >
-                <p className="text-lg font-semibold text-blue-400">
-                  {expense.title}
-                </p>
-                <p className="text-sm text-gray-300">
-                  משלם:{" "}
-                  {players.find((p) => p.id === expense.totalPayer)?.name ||
-                    "לא ידוע"}{" "}
-                  | סכום: ₪{expense.totalAmount}
-                </p>
-                <p className="text-xs text-gray-400">
-                  נוצר בתאריך:{" "}
-                  {new Date(expense.createdAt).toLocaleDateString("he-IL")}
-                </p>
+              <li key={expense.id} className="bg-gray-900 rounded-md shadow-md">
+                {/* Clickable Summary */}
+                <div
+                  className="p-3 cursor-pointer hover:bg-gray-800 transition rounded-md"
+                  onClick={() =>
+                    setSelectedExpense((prevSelected) =>
+                      prevSelected?.id === expense.id ? null : expense
+                    )
+                  }
+                >
+                  <p className="text-lg font-semibold text-blue-400">
+                    {expense.title}
+                  </p>
+                  <p className="text-sm text-gray-300">
+                    משלם:{" "}
+                    {players.find((p) => p.id === expense.totalPayer)?.name ||
+                      "לא ידוע"}{" "}
+                    | סכום: ₪{expense.totalAmount}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    נוצר בתאריך:{" "}
+                    {new Date(expense.createdAt).toLocaleDateString("he-IL")}
+                  </p>
+                </div>
+
+                {/* Show Details Below the Selected Expense */}
+                {selectedExpense?.id === expense.id && (
+                  <div className="p-6 bg-gray-800 text-white rounded-lg shadow-lg mt-2">
+                    {/* Sub Orders Section */}
+                    <div className="mt-4">
+                      <h3 className="text-lg font-semibold text-blue-300 mb-2">
+                        תתי-הזמנות
+                      </h3>
+                      <div className="space-y-3">
+                        {selectedExpense.subOrders.map((subOrder, index) => (
+                          <div
+                            key={index}
+                            className="flex justify-between items-center bg-gray-900 p-3 rounded-lg shadow"
+                          >
+                            <div>
+                              <p className="text-md font-semibold text-blue-300">
+                                {players.find((p) => p.id === subOrder.playerId)
+                                  ?.name || "לא ידוע"}
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                {subOrder.details || "ללא פרטים"}
+                              </p>
+                            </div>
+                            <span
+                              dir="ltr"
+                              className="text-green-400 font-semibold bg-gray-800 py-1 px-3 rounded-lg"
+                            >
+                              ₪ {subOrder.amount.toFixed(2)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Edit Mode Toggle */}
+                    <div className="flex justify-center space-x-3 mt-6">
+                      <button
+                        className="bg-red-500 hover:bg-red-600 px-6 py-2 rounded-md text-white shadow-md"
+                        onClick={() => setSelectedExpense(null)}
+                      >
+                        סגור
+                      </button>
+                    </div>
+                  </div>
+                )}
               </li>
             ))}
           </ul>
@@ -164,7 +395,7 @@ const AddFoodExpenses = ({ tableId }) => {
 
       {isFormVisible && (
         <div
-          className="max-w-3xl mx-auto bg-gray-800 text-white p-6 rounded-lg shadow-lg"
+          className="mt-4 bg-gray-800 text-white p-6 rounded-lg shadow-lg"
           dir="rtl"
         >
           {/* Order Metadata - Locked when sub-orders exist */}
@@ -218,7 +449,7 @@ const AddFoodExpenses = ({ tableId }) => {
           </div>
 
           {/* Add Sub Order */}
-          {remainingAmount !== 0 && (
+          {
             <div className="mb-6 transition-opacity duration-300 ease-in-out">
               <h1 className="text-2xl font-bold mb-4">הוספת תת-הזמנה</h1>
               <select
@@ -247,14 +478,22 @@ const AddFoodExpenses = ({ tableId }) => {
                 placeholder="פרטי תת-הזמנה"
                 className="w-full p-2 mb-4 rounded-lg bg-gray-900 border border-gray-700 text-right"
               />
+
               <button
                 onClick={handleAddSubOrder}
                 className="w-full py-2 bg-green-600 hover:bg-green-700 rounded-lg"
               >
                 הוסף תת-הזמנה
               </button>
+
+              <button
+                onClick={handleSplitEqually}
+                className="w-full py-2 bg-green-600 hover:bg-green-700 rounded-lg mt-8"
+              >
+                חלק שווה בשווה
+              </button>
             </div>
-          )}
+          }
 
           {/* Players' Sub Orders */}
           <div className="mb-6">
@@ -274,7 +513,7 @@ const AddFoodExpenses = ({ tableId }) => {
                           "לא ידוע"}
                       </span>
                       <span className="text-gray-300 text-sm">
-                        {order.details || "ללא פרטים"}
+                        {order.details || ""}
                       </span>
                     </div>
                     <div className="flex items-center space-x-4">
@@ -300,9 +539,11 @@ const AddFoodExpenses = ({ tableId }) => {
 
           {/* Finish Order */}
           <div className="mb-6">
-            <h1 className="text-2xl font-bold mb-4">
-              יתרה נותרה: {remainingAmount}
-            </h1>
+            {remainingAmount !== 0 && (
+              <h1 className="text-2xl font-bold mb-4">
+                יתרה נותרה: {remainingAmount}
+              </h1>
+            )}
             <div className="relative group">
               <button
                 onClick={handleFinishOrder}

@@ -268,17 +268,7 @@ const Sumup = () => {
               {player.name}
               {player.joiningLeftovers && " - משתתף בשאריות!"}
             </h3>
-            {/* player.donatedToLeftovers = donatedToLeftovers;
-        player.takeFromLeftovers = takeFromLeftovers;
-        player.joiningLeftovers = joiningLeftovers;
-        player.originalChipsAmount = originalChipsAmount;
-        player.afterLeftoversChipsAmount = afterLeftoversChipsAmount; */}
             <p className="text-gray-700">כניסות: {player.entries}</p>
-            <p>donatedToLeftovers: {player.donatedToLeftovers}</p>
-            <p>takeFromLeftovers: {player.takeFromLeftovers}</p>
-            <p>joiningLeftovers: {JSON.stringify(player.joiningLeftovers)}</p>
-            <p>originalChipsAmount: {player.originalChipsAmount}</p>
-            <p>afterLeftoversChipsAmount: {player.afterLeftoversChipsAmount}</p>
 
             <label className="block mt-4">
               <span className="text-gray-600" dir="rtl">
@@ -370,10 +360,13 @@ const Sumup = () => {
           )}
           {totalChipsOnTable - totalChipsInInputs < 0 && (
             <span dir="rtl">
-              תקלה בספירת הז׳יטונים, נספרו יותר מדי:
               {", "}
-              מאזן הספירה עומד על:
-              {totalChipsOnTable - totalChipsInInputs}
+              תקלה בספירת הז׳יטונים: נספרו יותר מדי ז׳יטונים
+              {", "}
+              מאזן הספירה:{" "}
+              <span dir="ltr">
+                {-1 * Math.abs(totalChipsOnTable - totalChipsInInputs)}
+              </span>
             </span>
           )}
         </h2>
