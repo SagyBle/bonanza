@@ -316,7 +316,7 @@ const Table = ({ isManagerMode, soundEnabled }) => {
 
   return (
     <div className="p-6 max-w-4xl mx-auto bg-white ">
-      <AddFoodExpenses tableId={tableId} />
+      <AddFoodExpenses tableId={tableId} isManagerMode={isManagerMode} />
 
       {/* Display the title and description of the table */}
       <div className=" text-white p-6 pb-0 rounded-lg shadow-lg text-center">

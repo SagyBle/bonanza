@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { db } from "../config/firebase";
-import { collection, getDocs, addDoc } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  addDoc,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
 
-const AddFoodExpenses = ({ tableId }) => {
+const AddFoodExpenses = ({ tableId, isManagerMode }) => {
   const [players, setPlayers] = useState([]);
   const [title, setTitle] = useState("");
   const [totalPayer, setTotalPayer] = useState("");
@@ -160,8 +166,39 @@ const AddFoodExpenses = ({ tableId }) => {
   };
 
   const handleFinishOrder = async () => {
-    if (remainingAmount !== 0) {
-      alert("יש לוודא שסכום השארית שווה לאפס לפני סגירת ההזמנה!");
+    // נחשב את סכום תתי ההזמנות
+    const totalSubOrderAmount = subOrders.reduce(
+      (sum, order) => sum + order.amount,
+      0
+    );
+    let remainder = totalAmount - totalSubOrderAmount;
+
+    // נעגל לשתי ספרות עשרוניות
+    remainder = Math.round(remainder * 100) / 100;
+
+    // אם יש splitter והשארית קטנה מ-1, נעדכן את האחרון
+    if (splitters.length > 0 && Math.abs(remainder) < 1) {
+      const updatedSubOrders = [...subOrders];
+      const lastSplitterIndex = updatedSubOrders
+        .map((s, i) => (s.split ? i : -1))
+        .filter((i) => i !== -1)
+        .pop();
+
+      if (lastSplitterIndex !== undefined) {
+        updatedSubOrders[lastSplitterIndex].amount = parseFloat(
+          (updatedSubOrders[lastSplitterIndex].amount + remainder).toFixed(2)
+        );
+        setSubOrders(updatedSubOrders);
+        remainder = 0; // נחשב כאילו תיקנו את השארית
+      }
+    }
+
+    // נוודא שהיתרה באמת אפס עכשיו
+    const finalTotal = subOrders.reduce((sum, o) => sum + o.amount, 0);
+    const finalRemainder = Math.round((totalAmount - finalTotal) * 100) / 100;
+
+    if (Math.abs(finalRemainder) >= 1) {
+      alert("יש לוודא שסכום השארית שווה לאפס או שארית קטנה תתוקן אוטומטית.");
       return;
     }
 
@@ -196,6 +233,26 @@ const AddFoodExpenses = ({ tableId }) => {
   const availablePlayersForSubOrder = players.filter(
     (player) => !subOrders.some((order) => order.playerId === player.id)
   );
+
+  const handleDeleteFoodExpense = async (
+    expenseId,
+    tableId,
+    setFoodExpenses
+  ) => {
+    const confirmDelete = window.confirm(
+      "האם אתה בטוח שברצונך למחוק את ההזמנה?"
+    );
+    if (!confirmDelete) return;
+
+    try {
+      await deleteDoc(doc(db, `tables/${tableId}/foodExpenses`, expenseId));
+      setFoodExpenses((prev) => prev.filter((e) => e.id !== expenseId));
+      console.log("ההזמנה נמחקה בהצלחה");
+    } catch (err) {
+      console.error("שגיאה במחיקת ההזמנה:", err);
+      alert("אירעה שגיאה בעת המחיקה");
+    }
+  };
 
   const handleRemoveSubOrder = (index) => {
     setSubOrders((prevSubOrders) => {
@@ -232,8 +289,6 @@ const AddFoodExpenses = ({ tableId }) => {
       return newSubOrders;
     });
   };
-
-  const keepEqualityBetweenSplitters = () => {};
 
   return (
     <>
@@ -340,6 +395,21 @@ const AddFoodExpenses = ({ tableId }) => {
                     נוצר בתאריך:{" "}
                     {new Date(expense.createdAt).toLocaleDateString("he-IL")}
                   </p>
+                  {isManagerMode && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteFoodExpense(
+                          expense.id,
+                          tableId,
+                          setFoodExpenses
+                        );
+                      }}
+                      className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md text-sm"
+                    >
+                      מחק
+                    </button>
+                  )}
                 </div>
 
                 {/* Show Details Below the Selected Expense */}
@@ -488,9 +558,10 @@ const AddFoodExpenses = ({ tableId }) => {
 
               <button
                 onClick={handleSplitEqually}
-                className="w-full py-2 bg-green-600 hover:bg-green-700 rounded-lg mt-8"
+                className="w-full py-2 bg-sky-500 hover:bg-sky-600 rounded-lg mt-8"
               >
                 חלק שווה בשווה
+                {subOrders && subOrders.length > 0 ? " בין היתר" : " בין כולם"}
               </button>
             </div>
           }

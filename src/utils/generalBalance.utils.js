@@ -1,4 +1,4 @@
-function minimalSettlement(playersData) {
+export function generalMinimalSettlement(playersData) {
   /**
    * playersData = [
    *   { user: "marko",   amountPaid: 3, amountDue: 0   },
@@ -186,33 +186,3 @@ const testCases = [
     ],
   },
 ];
-
-// ---------------------------------------------------------
-// 4) Run each test case
-// ---------------------------------------------------------
-function runAllTests() {
-  testCases.forEach(({ description, data }, idx) => {
-    console.log("=============================================");
-    console.log(`Test #${idx + 1}: ${description}\n`);
-
-    const txs = minimalSettlement(data);
-    txs.forEach(([debtor, creditor, amt]) => {
-      console.log(`  ${debtor} pays ${creditor} => ${amt}`);
-    });
-
-    const valid = validateTransactions(data, txs);
-    console.log(`\nNumber of transactions: ${txs.length}`);
-    console.log(`Valid Settlement?  ${valid}\n`);
-  });
-}
-
-// If run directly (node minimal_settlement.js), do all tests
-if (require.main === module) {
-  runAllTests();
-}
-
-// Export for other files
-module.exports = {
-  minimalSettlement,
-  validateTransactions,
-};
