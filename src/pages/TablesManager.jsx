@@ -96,8 +96,47 @@ const TablesManager = ({ isManagerMode }) => {
     setShowConfirmDelete(true);
   };
 
+  const handleNetlifyFunction = async () => {
+    try {
+      const response = await fetch(
+        "/.netlify/functions/cloudinary?search=searchthisplease"
+      );
+      const data = await response.json();
+      console.log("Response from Netlify function:", data);
+      alert("Response: " + JSON.stringify(data));
+    } catch (error) {
+      console.error("Error calling Netlify function:", error);
+      alert("Error calling Netlify function.");
+    }
+  };
+
+  const handleNetlifyPost = async () => {
+    try {
+      const response = await fetch("/.netlify/functions/cloudinary", {
+        method: "POST",
+        // action: "upload",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          search: "searchthisplease",
+          userId: "12345",
+        }),
+      });
+
+      const data = await response.json();
+      console.log("Response from cloudinarypost:", data);
+      alert("Response: " + JSON.stringify(data));
+    } catch (error) {
+      console.error("Error calling cloudinarypost function:", error);
+      alert("Error calling cloudinarypost function.");
+    }
+  };
+
   return (
     <div style={{ padding: "20px", maxWidth: "800px", margin: "0 auto" }}>
+      <button onClick={handleNetlifyFunction}>Try netlify function</button>
+      <button onClick={handleNetlifyPost}>Try post netlify function</button>
       <div
         className="flex flex-col items-center gap-4"
         style={{ marginTop: "40px" }}
