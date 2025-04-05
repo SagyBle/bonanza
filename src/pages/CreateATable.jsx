@@ -8,6 +8,9 @@ const CreateATable = () => {
   const [roomTitle, setRoomTitle] = useState("");
   const [roomDescription, setRoomDescription] = useState("");
   const [players, setPlayers] = useState([]);
+  const [image, setImage] = useState(null);
+  const [imageUrl, setImageUrl] = useState(null);
+  const [previewImageUrl, setPreviewImageUrl] = useState(null);
   const navigate = useNavigate();
 
   const handleTitleChange = (e) => {
@@ -32,6 +35,61 @@ const CreateATable = () => {
 
   const tablesCollection = collection(db, "tables");
 
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImage(file);
+      setPreviewImageUrl(URL.createObjectURL(file)); // Show image immediately
+      console.log("sagy20", file);
+    }
+  };
+
+  const handleUploadImage = async () => {
+    if (!image) return;
+
+    try {
+      const imageUrlResponse = await uploadImageToCloudinaryViaServer(image);
+
+      if (!imageUrlResponse) {
+        throw new Error("No image URL returned from server.");
+      }
+
+      setImageUrl(imageUrlResponse);
+      console.log("✅ Image uploaded:", imageUrlResponse);
+    } catch (err) {
+      console.error("❌ Upload failed:", err);
+      alert("Image upload failed!");
+    }
+  };
+
+  const uploadImageToCloudinaryViaServer = async (file) => {
+    const reader = new FileReader();
+
+    return new Promise((resolve, reject) => {
+      reader.onloadend = async () => {
+        try {
+          const res = await fetch("/.netlify/functions/cloudinary-upload", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ file: reader.result }),
+          });
+
+          const data = await res.json();
+          if (res.ok) {
+            resolve(data.url); // ✅ cloudinary secure URL
+          } else {
+            reject(data.error);
+          }
+        } catch (error) {
+          reject(error.message);
+        }
+      };
+
+      reader.readAsDataURL(file); // convert file to base64
+    });
+  };
+  // const uploadImage = (files) =>
+
   const handleCreateRoom = async () => {
     const roomCreationTime = new Date().toISOString();
 
@@ -43,10 +101,26 @@ const CreateATable = () => {
       year: "2-digit",
     })}`;
 
+    let imageUrlResponse = null;
+
+    if (image) {
+      try {
+        imageUrlResponse = await uploadImageToCloudinaryViaServer(image);
+        console.log(
+          "✅ Image uploaded during room creation:",
+          imageUrlResponse
+        );
+      } catch (err) {
+        console.error("❌ Failed to upload image during room creation:", err);
+        alert("Image upload failed. Creating table without image.");
+      }
+    }
+
     const newTable = {
       createdAt: roomCreationTime,
       title: roomTitle || defaultTitle,
       description: roomDescription,
+      ...(imageUrlResponse && { tableImageUrl: imageUrlResponse }),
     };
 
     try {
@@ -60,8 +134,8 @@ const CreateATable = () => {
 
       const playersCollectionRef = collection(tableDocRef, "players");
       for (const player of players) {
-        const playerDocRef = doc(playersCollectionRef, player.id); // Use the player's ID as the doc ID
-        await setDoc(playerDocRef, { ...player, entries: 1 }); // Add the player document with the custom ID
+        const playerDocRef = doc(playersCollectionRef, player.id);
+        await setDoc(playerDocRef, { ...player, entries: 1 });
 
         await addDoc(historyCollectionRef, {
           type: "player_added",
@@ -123,6 +197,47 @@ const CreateATable = () => {
           required
           dir="rtl"
         />
+      </div>
+
+      <div className="mb-4 flex flex-col">
+        <label
+          htmlFor="imageInput"
+          className="text-lg font-semibold text-green-500 self-end"
+          dir="rtl"
+        >
+          העלה תמונה:
+        </label>
+        <input
+          type="file"
+          id="imageInput"
+          accept="image/*"
+          onChange={handleImageChange}
+          className="w-full p-3 mt-2 rounded-lg bg-gray-900 text-white shadow-lg border border-green-500 focus:ring-2 focus:ring-green-600 focus:outline-none"
+          dir="rtl"
+        />
+        {image && (
+          <div className="mt-4 flex flex-col items-center border border-green-600 p-4 rounded-lg bg-gray-800 shadow-md">
+            {/* <p dir="rtl" className="text-sm text-green-400 mb-2">
+              התמונה שנבחרה: {image.name}
+            </p> */}
+            {previewImageUrl && (
+              <img
+                src={previewImageUrl}
+                alt="תצוגה של תמונה מקומית"
+                className="rounded-xl shadow-lg w-full max-w-xs h-auto object-cover border border-green-500"
+              />
+            )}
+          </div>
+        )}
+        {/* {image && <button onClick={handleUploadImage}>Upload Photo</button>} */}
+
+        {/* {imageUrl && (
+          <img
+            src={imageUrl}
+            alt="תצוגה של תמונה שהועלתה"
+            className="mt-4 rounded-lg shadow-lg max-w-xs"
+          />
+        )} */}
       </div>
 
       <button

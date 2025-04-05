@@ -114,7 +114,6 @@ const TablesManager = ({ isManagerMode }) => {
     try {
       const response = await fetch("/.netlify/functions/cloudinary", {
         method: "POST",
-        // action: "upload",
         headers: {
           "Content-Type": "application/json",
         },
