@@ -134,8 +134,6 @@ const TablesManager = ({ isManagerMode }) => {
 
   return (
     <div style={{ padding: "20px", maxWidth: "800px", margin: "0 auto" }}>
-      <button onClick={handleNetlifyFunction}>Try netlify function</button>
-      <button onClick={handleNetlifyPost}>Try post netlify function</button>
       <div
         className="flex flex-col items-center gap-4"
         style={{ marginTop: "40px" }}
