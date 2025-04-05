@@ -319,7 +319,17 @@ const Table = ({ isManagerMode, soundEnabled }) => {
       <AddFoodExpenses tableId={tableId} isManagerMode={isManagerMode} />
 
       {/* Display the title and description of the table */}
-      <div className=" text-white p-6 pb-0 rounded-lg shadow-lg text-center">
+      {tableData.tableImageUrl && (
+        <div className="w-full mb-4 rounded-lg overflow-hidden shadow-lg">
+          <img
+            src={tableData.tableImageUrl}
+            alt="Hero Image"
+            className="w-full h-64 object-cover"
+          />
+        </div>
+      )}
+
+      <div className="text-white p-6 pb-0 rounded-lg shadow-lg text-center">
         <h2 className="text-3xl font-bold text-blue-500">
           {tableData.title
             ? `🃏 ${tableData.title}`
