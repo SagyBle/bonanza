@@ -171,13 +171,22 @@ const AddFoodExpenses = ({ tableId, isManagerMode }) => {
       (sum, order) => sum + order.amount,
       0
     );
+
+    console.log("sagy1", totalSubOrderAmount);
+
     let remainder = totalAmount - totalSubOrderAmount;
+
+    console.log("sagy2", remainder);
 
     // נעגל לשתי ספרות עשרוניות
     remainder = Math.round(remainder * 100) / 100;
 
+    console.log("sagy3", remainder);
+
     // אם יש splitter והשארית קטנה מ-1, נעדכן את האחרון
     if (splitters.length > 0 && Math.abs(remainder) < 1) {
+      console.log("sagy4", "here");
+
       const updatedSubOrders = [...subOrders];
       const lastSplitterIndex = updatedSubOrders
         .map((s, i) => (s.split ? i : -1))
@@ -269,19 +278,24 @@ const AddFoodExpenses = ({ tableId, isManagerMode }) => {
           .filter((order) => !order.split)
           .reduce((sum, order) => sum + order.amount, 0);
 
-        // Log the calculated number
-
         const remainingSplitAmount = totalAmount - nonSplittersTotal;
-        console.log(
-          "assign to each new splitters:",
-          remainingSplitAmount / updatedSplitters?.length
-        );
         const newSplitterAmount =
-          remainingSplitAmount / updatedSplitters?.length;
+          updatedSplitters.length > 0
+            ? Math.round(
+                (remainingSplitAmount / updatedSplitters.length) * 100
+              ) / 100
+            : 0;
 
-        newSubOrders.forEach((subOrder) =>
-          subOrder.split ? (subOrder.amount = newSplitterAmount) : null
+        const updatedSubOrders = newSubOrders.map((subOrder) =>
+          subOrder.split
+            ? {
+                ...subOrder,
+                amount: newSplitterAmount,
+              }
+            : subOrder
         );
+
+        setSubOrders(updatedSubOrders); // Re-set with correct precision
 
         return updatedSplitters;
       });

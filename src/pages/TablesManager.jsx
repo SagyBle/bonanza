@@ -8,6 +8,7 @@ import AddGeneralPlayer from "../components/AddGeneralPlayer";
 import tableIcon from "../assets/icons/table.svg";
 import sheepIcon from "../assets/icons/sheep.svg";
 import AddFoodExpenses from "../components/AddFoodExpenses";
+import { migrateToGroup } from "@/utils/migrations.utils";
 
 const TablesManager = ({ isManagerMode }) => {
   const [tables, setTables] = useState([]);
@@ -74,20 +75,59 @@ const TablesManager = ({ isManagerMode }) => {
     setShowAddGeneralPlayer((prev) => !prev);
   };
 
+  // const deleteTable = async () => {
+  //   try {
+  //     if (!tableToDelete) return;
+
+  //     await deleteDoc(doc(db, "tables", tableToDelete));
+  //     setTables((prevTables) =>
+  //       prevTables.filter((table) => table.id !== tableToDelete)
+  //     );
+  //     if (activeTable?.id === tableToDelete) {
+  //       setActiveTable(null);
+  //     }
+  //     setShowConfirmDelete(false);
+  //   } catch (error) {
+  //     console.error("Error deleting table:", error);
+  //   }
+  // };
+
   const deleteTable = async () => {
     try {
       if (!tableToDelete) return;
 
-      await deleteDoc(doc(db, "tables", tableToDelete));
+      const tableRef = doc(db, "tables", tableToDelete);
+
+      // Step 1: Delete players subcollection
+      const playersSnapshot = await getDocs(collection(tableRef, "players"));
+      const playerDeletes = playersSnapshot.docs.map((doc) =>
+        deleteDoc(doc.ref)
+      );
+
+      // Step 2: Delete history subcollection
+      const historySnapshot = await getDocs(collection(tableRef, "history"));
+      const historyDeletes = historySnapshot.docs.map((doc) =>
+        deleteDoc(doc.ref)
+      );
+
+      // Wait for all deletes to complete
+      await Promise.all([...playerDeletes, ...historyDeletes]);
+
+      // Step 3: Delete the table document itself
+      await deleteDoc(tableRef);
+
+      // Step 4: Update local state
       setTables((prevTables) =>
         prevTables.filter((table) => table.id !== tableToDelete)
       );
+
       if (activeTable?.id === tableToDelete) {
         setActiveTable(null);
       }
+
       setShowConfirmDelete(false);
     } catch (error) {
-      console.error("Error deleting table:", error);
+      console.error("Error deleting table and subcollections:", error);
     }
   };
 
