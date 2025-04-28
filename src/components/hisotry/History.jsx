@@ -1,18 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { db } from "../../config/firebase"; // Adjust the path to your firebase config
+import { db } from "../../config/firebase";
 import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
 import HistoryEntry from "./HistoryEntry";
 
-const History = ({ tableId }) => {
+const History = ({ groupId, tableId }) => {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
-    const historyCollection = collection(db, "tables", tableId, "history");
+    const historyCollection = collection(
+      db,
+      `groups/${groupId}/tables/${tableId}/history`
+    );
     const orderedHistoryQuery = query(
       historyCollection,
-      orderBy("timestamp", "desc") // Fetch in descending order (newest first)
+      orderBy("timestamp", "desc")
     );
 
     const unsubscribe = onSnapshot(
@@ -32,7 +35,7 @@ const History = ({ tableId }) => {
     );
 
     return () => unsubscribe();
-  }, [tableId]);
+  }, [groupId, tableId]);
 
   if (loading) {
     return (
@@ -57,13 +60,11 @@ const History = ({ tableId }) => {
         {displayedHistory.map((entry) => (
           <HistoryEntry key={entry.id} entry={entry} />
         ))}
-        {/* Visual indicator (faded effect) when more history exists */}
         {!showAll && history.length > 8 && (
           <div className="absolute bottom-0 left-0 w-full h-12 bg-gradient-to-t from-white to-transparent pointer-events-none" />
         )}
       </ul>
 
-      {/* Toggle button to show more/less history */}
       {history.length > 8 && (
         <button
           onClick={() => setShowAll(!showAll)}

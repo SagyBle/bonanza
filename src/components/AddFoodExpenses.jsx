@@ -8,7 +8,7 @@ import {
   doc,
 } from "firebase/firestore";
 
-const AddFoodExpenses = ({ tableId, isManagerMode }) => {
+const AddFoodExpenses = ({ groupId, tableId, isManagerMode }) => {
   const [players, setPlayers] = useState([]);
   const [title, setTitle] = useState("");
   const [totalPayer, setTotalPayer] = useState("");
@@ -29,7 +29,10 @@ const AddFoodExpenses = ({ tableId, isManagerMode }) => {
   useEffect(() => {
     const fetchPlayers = async () => {
       try {
-        const playersRef = collection(db, `tables/${tableId}/players`);
+        const playersRef = collection(
+          db,
+          `groups/${groupId}/tables/${tableId}/players`
+        );
         const playerDocs = await getDocs(playersRef);
         const playersList = playerDocs.docs.map((doc) => ({
           id: doc.id,
@@ -47,7 +50,10 @@ const AddFoodExpenses = ({ tableId, isManagerMode }) => {
   useEffect(() => {
     const fetchFoodExpenses = async () => {
       try {
-        const expensesRef = collection(db, `tables/${tableId}/foodExpenses`);
+        const expensesRef = collection(
+          db,
+          `groups/${groupId}/tables/${tableId}/foodExpenses`
+        );
         const expenseDocs = await getDocs(expensesRef);
         const expensesList = expenseDocs.docs.map((doc) => ({
           id: doc.id,
@@ -222,7 +228,7 @@ const AddFoodExpenses = ({ tableId, isManagerMode }) => {
       };
 
       const docRef = await addDoc(
-        collection(db, `tables/${tableId}/foodExpenses`),
+        collection(db, `groups/${groupId}/tables/${tableId}/foodExpenses`),
         foodExpenseData
       );
 
@@ -254,7 +260,9 @@ const AddFoodExpenses = ({ tableId, isManagerMode }) => {
     if (!confirmDelete) return;
 
     try {
-      await deleteDoc(doc(db, `tables/${tableId}/foodExpenses`, expenseId));
+      await deleteDoc(
+        doc(db, `groups/${groupId}/tables/${tableId}/foodExpenses`, expenseId)
+      );
       setFoodExpenses((prev) => prev.filter((e) => e.id !== expenseId));
       console.log("ההזמנה נמחקה בהצלחה");
     } catch (err) {

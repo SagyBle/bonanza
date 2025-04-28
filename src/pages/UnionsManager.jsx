@@ -6,7 +6,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "../config/firebase";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import TableCreated from "../components/TableCreated";
 
 const UnionsManager = () => {
@@ -16,11 +16,16 @@ const UnionsManager = () => {
   const [unionTitle, setUnionTitle] = useState("");
   const navigate = useNavigate();
 
+  const { groupId } = useParams(); // תוודא שיש לך את זה בראש הקובץ
+
   // Fetch tables from Firestore
   useEffect(() => {
     const fetchTables = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, "tables"));
+        // const querySnapshot = await getDocs(collection(db, "tables"));
+        const querySnapshot = await getDocs(
+          collection(db, `groups/${groupId}/tables`)
+        );
         const tablesData = querySnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
@@ -80,6 +85,7 @@ const UnionsManager = () => {
       title: unionTitle,
       tables: selectedTables, // Array of table IDs
       createdAt: serverTimestamp(),
+      groupId: groupId, // 🛑 חשוב מאוד - חובה לשמור לאיזה group שייך האיחוד
     };
 
     try {

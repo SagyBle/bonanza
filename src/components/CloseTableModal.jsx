@@ -1,13 +1,13 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
-const CloseTableModal = ({ isOpen, onClose, tableId }) => {
+const CloseTableModal = ({ isOpen, onClose, groupId, tableId }) => {
   const navigate = useNavigate();
 
   if (!isOpen) return null;
 
   const handleConfirm = () => {
-    navigate(`/sumup/${tableId}`);
+    navigate(`/group/${groupId}/sumup/${tableId}`);
   };
 
   return (

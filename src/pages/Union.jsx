@@ -37,13 +37,22 @@ const Union = ({ isManagerMode }) => {
         const tableIds = union.tables || [];
         const fetchedTables = [];
         for (const tableId of tableIds) {
-          const tableDocRef = doc(db, "tables", tableId);
+          // const tableDocRef = doc(db, "tables", tableId);
+          const tableDocRef = doc(
+            db,
+            `groups/${union.groupId}/tables`,
+            tableId
+          );
           const tableSnap = await getDoc(tableDocRef);
           if (tableSnap.exists()) {
             const table = { id: tableSnap.id, ...tableSnap.data() };
             // Fetch players from the table's "players" subcollection
             const playersQuerySnapshot = await getDocs(
-              collection(db, "tables", tableId, "players")
+              // collection(db, "tables", tableId, "players")
+              collection(
+                db,
+                `groups/${union.groupId}/tables/${tableId}/players`
+              )
             );
             const players = playersQuerySnapshot.docs.map((doc) => ({
               id: doc.id,

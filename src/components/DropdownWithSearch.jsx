@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { db } from "../config/firebase";
 import { collection, getDocs } from "firebase/firestore";
 
-const DropdownWithSearch = ({ onSelectPlayer }) => {
+const DropdownWithSearch = ({ groupId, onSelectPlayer }) => {
   const [inputValue, setInputValue] = useState("");
   const [playersList, setPlayersList] = useState([]);
   const [filteredPlayers, setFilteredPlayers] = useState([]);
@@ -14,7 +14,9 @@ const DropdownWithSearch = ({ onSelectPlayer }) => {
   // Fetch players from Firestore
   useEffect(() => {
     const fetchPlayers = async () => {
-      const querySnapshot = await getDocs(collection(db, "generalPlayers"));
+      const querySnapshot = await getDocs(
+        collection(db, `groups/${groupId}/generalPlayers`)
+      );
       const players = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         name: doc.data().name,

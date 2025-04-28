@@ -17,7 +17,7 @@ import AddFoodExpenses from "@/components/AddFoodExpenses";
 import { generalMinimalSettlement } from "@/utils/generalBalance.utils";
 
 const Split = ({ isManagerMode }) => {
-  const { tableId } = useParams();
+  const { tableId, groupId } = useParams();
   const [players, setPlayers] = useState([]);
   const [generalPlayers, setGeneralPlayers] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -232,7 +232,12 @@ const Split = ({ isManagerMode }) => {
         חישוב העברות
       </h1>
 
-      <AddFoodExpenses tableId={tableId} isManagerMode={isManagerMode} />
+      {/* <AddFoodExpenses tableId={tableId} isManagerMode={isManagerMode} /> */}
+      <AddFoodExpenses
+        tableId={tableId}
+        groupId={groupId}
+        isManagerMode={isManagerMode}
+      />
 
       <div className="mb-6">
         <h2 className="text-xl font-semibold" dir="rtl">

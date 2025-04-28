@@ -5,7 +5,8 @@ import { db } from "../config/firebase";
 import PrevCurrInput from "@/components/PrevCurrInput";
 
 const Sumup = () => {
-  const { tableId } = useParams();
+  // const { tableId } = useParams();
+  const { tableId, groupId } = useParams();
   const [players, setPlayers] = useState([]);
   const [chipInputs, setChipInputs] = useState({});
   const [disabledInputs, setDisabledInputs] = useState({});
@@ -28,7 +29,7 @@ const Sumup = () => {
       try {
         const playersCollectionRef = collection(
           db,
-          `tables/${tableId}/players`
+          `groups/${groupId}/tables/${tableId}/players`
         );
         const playersSnapshot = await getDocs(playersCollectionRef);
         const playersData = playersSnapshot.docs.map((doc) => ({
@@ -209,14 +210,15 @@ const Sumup = () => {
     );
 
     // Update leftovers total in the table document
-    const tableDocRef = doc(db, `tables/${tableId}`);
+    const tableDocRef = doc(db, `groups/${groupId}/tables/${tableId}`);
     const updateTableDoc = updateDoc(tableDocRef, {
       leftovers: totalLeftovers,
     });
 
     try {
       await Promise.all([...batchUpdates, updateTableDoc]);
-      navigate(`/leftovers/${tableId}`);
+
+      navigate(`/leftovers/group/${groupId}/table/${tableId}`);
     } catch (error) {
       console.error("Error updating players or table:", error);
       alert("An error occurred while finalizing the table.");

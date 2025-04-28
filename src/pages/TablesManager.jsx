@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import CreateATable from "./CreateATable";
 import { getDocs, collection, deleteDoc, doc } from "firebase/firestore";
 import { db } from "../config/firebase";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import TableCreated from "../components/TableCreated";
 import AddGeneralPlayer from "../components/AddGeneralPlayer";
 import tableIcon from "../assets/icons/table.svg";
@@ -11,6 +11,7 @@ import AddFoodExpenses from "../components/AddFoodExpenses";
 import { migrateToGroup } from "@/utils/migrations.utils";
 
 const TablesManager = ({ isManagerMode }) => {
+  const { groupId } = useParams();
   const [tables, setTables] = useState([]);
   const [activeTable, setActiveTable] = useState(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -19,7 +20,7 @@ const TablesManager = ({ isManagerMode }) => {
   const [showAddGeneralPlayer, setShowAddGeneralPlayer] = useState(false);
   const navigate = useNavigate();
 
-  const tablesCollection = collection(db, "tables");
+  const tablesCollection = collection(db, `groups/${groupId}/tables`);
 
   useEffect(() => {
     const getTables = async () => {
@@ -65,7 +66,7 @@ const TablesManager = ({ isManagerMode }) => {
   }, []);
 
   const handleTableClick = (tableId) => {
-    navigate(`/table/${tableId}`);
+    navigate(`/group/${groupId}/table/${tableId}`);
   };
 
   const toggleCreateForm = () => {
@@ -96,7 +97,8 @@ const TablesManager = ({ isManagerMode }) => {
     try {
       if (!tableToDelete) return;
 
-      const tableRef = doc(db, "tables", tableToDelete);
+      // const tableRef = doc(db, "tables", tableToDelete);
+      const tableRef = doc(db, `groups/${groupId}/tables`, tableToDelete);
 
       // Step 1: Delete players subcollection
       const playersSnapshot = await getDocs(collection(tableRef, "players"));
@@ -174,6 +176,7 @@ const TablesManager = ({ isManagerMode }) => {
 
   return (
     <div style={{ padding: "20px", maxWidth: "800px", margin: "0 auto" }}>
+      <span>{groupId}</span>
       <div
         className="flex flex-col items-center gap-4"
         style={{ marginTop: "40px" }}
@@ -200,8 +203,8 @@ const TablesManager = ({ isManagerMode }) => {
       </div>
 
       <div style={{ marginTop: "20px" }} className="flex flex-col gap-8 ">
-        {showCreateForm && <CreateATable />}
-        {showAddGeneralPlayer && <AddGeneralPlayer />}
+        {showCreateForm && <CreateATable groupId={groupId} />}
+        {showAddGeneralPlayer && <AddGeneralPlayer groupId={groupId} />}
       </div>
 
       <div style={{ marginBottom: "40px" }}>

@@ -12,7 +12,10 @@ const AddGeneralPlayer = () => {
     setIsAdding(true);
 
     try {
-      const generalPlayersCollection = collection(db, "generalPlayers");
+      const generalPlayersCollection = collection(
+        db,
+        `groups/${groupId}/generalPlayers`
+      );
       await addDoc(generalPlayersCollection, {
         name: playerName,
         phoneNumber: playerPhone,

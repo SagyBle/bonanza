@@ -14,7 +14,7 @@ const Header = ({
   const [showMobileMenu, setShowMobileMenu] = useState(false);
 
   const handleHomeClick = () => {
-    navigate("/");
+    navigate("/groups");
     setShowMobileMenu(false);
   };
 
