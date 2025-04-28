@@ -539,6 +539,7 @@ const Table = ({ isManagerMode, soundEnabled }) => {
       <h2 className="mt-16">הוספת שחקנים נוספים</h2>
       {/* <DropdownWithSearch onSelectPlayer={handlePlayerSelect} /> */}
       <AddPlayerDropdown
+        groupId={groupId}
         onSelectPlayer={(player) => handleAddPlayer(player)}
         playersToReduce={players}
       />

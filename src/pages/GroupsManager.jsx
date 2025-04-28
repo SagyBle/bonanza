@@ -56,11 +56,6 @@ const GroupsManager = () => {
                   נוצר על ידי: {group.createdBy}
                 </p>
               )}
-              {group.createdAt && (
-                <p className="text-sm text-gray-400">
-                  {new Date(group.createdAt).toLocaleDateString()}
-                </p>
-              )}
             </li>
           ))}
         </ul>

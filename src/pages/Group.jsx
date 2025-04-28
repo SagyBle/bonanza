@@ -34,8 +34,8 @@ const Group = ({ isManagerMode }) => {
 
   return (
     <div className="p-4 max-w-4xl mx-auto">
-      <h1 className="text-2xl font-bold mb-4 text-center">
-        {loading ? "טוען שם קבוצה..." : `קבוצה: ${groupName}`}
+      <h1 className="text-3xl font-extrabold mb-6 text-center text-blue-600">
+        {loading ? "טוען שם קבוצה..." : groupName}
       </h1>
 
       <TablesManager groupId={groupId} isManagerMode={isManagerMode} />
