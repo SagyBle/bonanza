@@ -32,6 +32,9 @@ function App() {
             setSoundEnabled={setSoundEnabled}
           />
         </header>
+        <div className="w-100 bg-red-50 flex pl-4 pt-1">
+          <span>v2.1.0</span>
+        </div>
 
         <Routes>
           <Route
