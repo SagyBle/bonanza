@@ -532,6 +532,7 @@ const Table = ({ isManagerMode, soundEnabled }) => {
         <CloseTableModal
           isOpen={showCloseTableModal}
           onClose={() => setShowCloseTableModal(false)}
+          groupId={groupId}
           tableId={tableId}
         />
       )}

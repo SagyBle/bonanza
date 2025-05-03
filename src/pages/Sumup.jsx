@@ -54,9 +54,8 @@ const Sumup = () => {
         console.error("Error fetching players:", error);
       }
     };
-
     fetchPlayers();
-  }, [tableId]);
+  }, [tableId, groupId]);
 
   const totalChipsOnTable = players.reduce(
     (sum, player) => sum + player.entries * 100,
@@ -199,7 +198,12 @@ const Sumup = () => {
         originalChipsAmount,
         isParticipatesLeftovers,
       }) => {
-        const playerDocRef = doc(db, `tables/${tableId}/players`, id);
+        // const playerDocRef = doc(db, `tables/${tableId}/players`, id);
+        const playerDocRef = doc(
+          db,
+          `groups/${groupId}/tables/${tableId}/players`,
+          id
+        );
         return updateDoc(playerDocRef, {
           finalTotalChips,
           afterLeftoversChipsAmount,

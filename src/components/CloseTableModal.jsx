@@ -7,7 +7,7 @@ const CloseTableModal = ({ isOpen, onClose, groupId, tableId }) => {
   if (!isOpen) return null;
 
   const handleConfirm = () => {
-    navigate(`/group/${groupId}/sumup/${tableId}`);
+    navigate(`/sumup/group/${groupId}/table/${tableId}`);
   };
 
   return (

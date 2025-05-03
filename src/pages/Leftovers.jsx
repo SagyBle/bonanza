@@ -9,8 +9,8 @@ import {
 } from "firebase/firestore";
 import { db } from "../config/firebase";
 
-const Leftovers = ({ groupId, isManagerMode }) => {
-  const { tableId } = useParams();
+const Leftovers = ({ isManagerMode }) => {
+  const { tableId, groupId } = useParams();
   const navigate = useNavigate();
 
   const [players, setPlayers] = useState([]);
