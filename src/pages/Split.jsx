@@ -11,10 +11,9 @@ import {
 } from "firebase/firestore";
 import { db } from "../config/firebase";
 import { minimalSettlement } from "../utils/balance.utils";
-import whatsappIcon from "../assets/icons/whatsapp.svg";
-import Paybox from "../components/Paybox";
-import AddFoodExpenses from "@/components/AddFoodExpenses";
 import { generalMinimalSettlement } from "@/utils/generalBalance.utils";
+import whatsappIcon from "../assets/icons/whatsapp.svg";
+import AddFoodExpenses from "@/components/AddFoodExpenses";
 
 const Split = ({ isManagerMode }) => {
   const { tableId, groupId } = useParams();
@@ -23,213 +22,169 @@ const Split = ({ isManagerMode }) => {
   const [transactions, setTransactions] = useState([]);
   const [foodTransactions, setFoodTransactions] = useState([]);
 
+  const [moneyChipsRelation, setMoneyChipsRelation] = useState(null);
+  const [editRelation, setEditRelation] = useState(false);
+  const [newRelation, setNewRelation] = useState("");
+
   useEffect(() => {
-    const fetchTableAndPlayers = async () => {
+    const fetchData = async () => {
       try {
-        const tableDocSnap = await getDoc(
-          doc(db, `groups/${groupId}/tables/${tableId}`)
-        );
-        if (tableDocSnap.exists()) {
-          const tableData = tableDocSnap.data();
-          if (tableData.pokerSettlement?.length > 0) {
-            setTransactions(tableData.pokerSettlement);
-          }
-          if (tableData.foodSettlement?.length > 0) {
-            setFoodTransactions(tableData.foodSettlement);
-          }
+        const tableRef = doc(db, `groups/${groupId}/tables/${tableId}`);
+        const groupRef = doc(db, `groups/${groupId}`);
+
+        const [tableSnap, groupSnap] = await Promise.all([
+          getDoc(tableRef),
+          getDoc(groupRef),
+        ]);
+
+        if (tableSnap.exists()) {
+          const tableData = tableSnap.data();
+
+          setTransactions(tableData.pokerSettlement || []);
+          setFoodTransactions(tableData.foodSettlement || []);
+
+          const relation =
+            tableData.moneyChipsRelation ??
+            (groupSnap.exists()
+              ? groupSnap.data().moneyChipsRelation ?? null
+              : null);
+
+          setMoneyChipsRelation(relation);
         }
 
-        const playersCollectionRef = collection(
-          db,
-          `groups/${groupId}/tables/${tableId}/players`
+        const playersSnapshot = await getDocs(
+          collection(db, `groups/${groupId}/tables/${tableId}/players`)
         );
-        const playersSnapshot = await getDocs(playersCollectionRef);
-        const playersData = playersSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setPlayers(playersData);
-      } catch (error) {
-        console.error("Error fetching players or table:", error);
+        setPlayers(
+          playersSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+        );
+      } catch (err) {
+        console.error("Error fetching data:", err);
       }
     };
 
-    fetchTableAndPlayers();
+    fetchData();
   }, [groupId, tableId]);
 
   useEffect(() => {
     const fetchGeneralPlayers = async () => {
       try {
-        const playerIds = players.map((player) => player.id);
-        if (playerIds.length === 0) {
-          setGeneralPlayers([]);
-          return;
-        }
+        const ids = players.map((p) => p.id);
+        if (!ids.length) return setGeneralPlayers([]);
 
-        const generalPlayersQuery = query(
+        const q = query(
           collection(db, `groups/${groupId}/generalPlayers`),
-          where("__name__", "in", playerIds)
+          where("__name__", "in", ids)
         );
-
-        const querySnapshot = await getDocs(generalPlayersQuery);
-        const fetchedPlayers = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setGeneralPlayers(fetchedPlayers);
-      } catch (error) {
-        console.error("Error fetching general players:", error);
+        const snap = await getDocs(q);
+        setGeneralPlayers(
+          snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+        );
+      } catch (err) {
+        console.error("Error fetching general players:", err);
       }
     };
 
     fetchGeneralPlayers();
   }, [players]);
 
-  const getPlayerDetails = (playerId) => {
-    const player = generalPlayers.find((gp) => gp.id === playerId);
-    return player
-      ? { name: player.name, id: player.id, phoneNumber: player.phoneNumber }
-      : { name: "Unknown", id: playerId, phoneNumber: "N/A" };
+  const getPlayerDetails = (id) => {
+    const p = generalPlayers.find((gp) => gp.id === id);
+    return p
+      ? { name: p.name, id: p.id, phoneNumber: p.phoneNumber }
+      : { name: "Unknown", id, phoneNumber: "N/A" };
   };
 
   const calculateSplit = async () => {
-    const playerObjects = players.map((player) => ({
-      user: player.id,
-      buy_ins: player.entries,
-      final_value: player.finalTotalChips,
+    const playerObjs = players.map((p) => ({
+      user: p.id,
+      buy_ins: p.entries,
+      final_value: p.finalTotalChips,
     }));
+    const txs = minimalSettlement(playerObjs);
 
-    const txs = minimalSettlement(playerObjects);
-
-    const formattedTransactions = txs.map(([debtor, creditor, amt]) => ({
+    const results = txs.map(([debtor, creditor, amt]) => ({
       debtor: getPlayerDetails(debtor),
       creditor: getPlayerDetails(creditor),
-      amount: amt / 2,
+      amount: amt / moneyChipsRelation,
     }));
 
-    setTransactions(formattedTransactions);
-
-    try {
-      await updateDoc(doc(db, `groups/${groupId}/tables/${tableId}`), {
-        pokerSettlement: formattedTransactions,
-      });
-      console.log("Poker settlement saved successfully.");
-    } catch (error) {
-      console.error("Error saving poker settlement:", error);
-    }
+    setTransactions(results);
+    await updateDoc(doc(db, `groups/${groupId}/tables/${tableId}`), {
+      pokerSettlement: results,
+    });
   };
 
   const calculateFoodSplit = async () => {
     try {
-      console.log("🔄 Starting food split calculation...");
-
-      const foodExpensesRef = collection(
+      const foodRef = collection(
         db,
         `groups/${groupId}/tables/${tableId}/foodExpenses`
       );
-      const foodExpensesSnapshot = await getDocs(foodExpensesRef);
-      const foodExpenses = foodExpensesSnapshot.docs.map((doc) => doc.data());
+      const snap = await getDocs(foodRef);
+      const expenses = snap.docs.map((d) => d.data());
 
-      console.log("📦 Fetched food expenses from Firestore:", foodExpenses);
-
-      if (foodExpenses.length === 0) {
-        alert("אין חישובי אוכל לבצע.");
-        return;
-      }
+      if (!expenses.length) return alert("אין חישובי אוכל לבצע.");
 
       const balance = {};
-
-      foodExpenses.forEach((expense, index) => {
-        const { totalPayer, totalAmount, subOrders } = expense;
-
-        console.log(`➡️ Expense #${index + 1}:`, expense);
-
+      expenses.forEach(({ totalPayer, totalAmount, subOrders }) => {
         if (!balance[totalPayer]) balance[totalPayer] = { paid: 0, due: 0 };
         balance[totalPayer].paid += totalAmount;
-
         subOrders.forEach(({ playerId, amount }) => {
           if (!balance[playerId]) balance[playerId] = { paid: 0, due: 0 };
           balance[playerId].due += amount;
         });
       });
 
-      console.log("📊 Calculated balance map:", balance);
+      const playerArr = Object.entries(balance).map(([id, { paid, due }]) => ({
+        user: id,
+        amountPaid: due,
+        amountDue: paid,
+      }));
+      const txs = generalMinimalSettlement(playerArr);
 
-      const playersArray = Object.entries(balance).map(
-        ([playerId, { paid, due }]) => ({
-          user: playerId,
-          amountPaid: due,
-          amountDue: paid,
-        })
-      );
-
-      console.log("👥 Players array for minimalSettlement:", playersArray);
-
-      const txs = generalMinimalSettlement(playersArray);
-
-      console.log("✅ Transactions returned from minimalSettlement:", txs);
-
-      const formattedFoodTransactions = txs.map(([debtor, creditor, amt]) => ({
+      const results = txs.map(([debtor, creditor, amt]) => ({
         debtor: getPlayerDetails(debtor),
         creditor: getPlayerDetails(creditor),
         amount: amt,
       }));
 
-      console.log("📤 Formatted food transactions:", formattedFoodTransactions);
-
-      setFoodTransactions(formattedFoodTransactions);
-
+      setFoodTransactions(results);
       await updateDoc(doc(db, `groups/${groupId}/tables/${tableId}`), {
-        foodSettlement: formattedFoodTransactions,
+        foodSettlement: results,
       });
-
-      console.log("📦 Food settlement saved to Firestore.");
-    } catch (error) {
-      console.error("❌ Error calculating food split:", error);
+    } catch (err) {
+      console.error("❌ Error calculating food split:", err);
     }
   };
 
-  const sendToWhatsApp = () => {
-    if (transactions.length === 0) {
-      alert("אין חישובים לשליחה!");
-      return;
-    }
-
-    const message = transactions
-      .map(
-        (tx) => `${tx.debtor.name} מעביר ל${tx.creditor.name} ${tx.amount} ש״ח`
-      )
-      .join("\n");
-
-    const footer = "\n\nנוצר ע״י bonanzApp";
-    const link = `\nhttps://bonanzapp.com/group/${groupId}/table/${tableId}`;
-
-    const whatsappURL = `https://wa.me/?text=${encodeURIComponent(
-      message + footer + link
-    )}`;
-    window.open(whatsappURL, "_self");
+  const sendToWhatsApp = (arr, label) => {
+    if (!arr.length) return alert(`אין ${label} לשליחה!`);
+    const lines = arr.map(
+      (tx) =>
+        `${tx.debtor.name} מעביר ל${tx.creditor.name} ${tx.amount} ש״ח${
+          label === "אוכל" ? " עבור אוכל" : ""
+        }`
+    );
+    const link = `https://bonanzapp.com/group/${groupId}/table/${tableId}`;
+    window.open(
+      `https://wa.me/?text=${encodeURIComponent(
+        lines.join("\n") + "\n\nנוצר ע״י bonanzApp\n" + link
+      )}`,
+      "_self"
+    );
   };
 
-  const sendFoodToWhatsApp = () => {
-    if (foodTransactions.length === 0) {
-      alert("אין חישובי אוכל לשליחה!");
-      return;
-    }
-
-    const message = foodTransactions
-      .map(
-        (tx) =>
-          `${tx.debtor.name} מעביר ל${tx.creditor.name} ${tx.amount} ש״ח עבור אוכל`
-      )
-      .join("\n");
-
-    const footer = "\n\nנוצר ע״י bonanzApp";
-    const link = `\nhttps://bonanzapp.com/group/${groupId}/table/${tableId}`;
-
-    const whatsappURL = `https://wa.me/?text=${encodeURIComponent(
-      message + footer + link
-    )}`;
-    window.open(whatsappURL, "_self");
+  const saveRelation = async () => {
+    const value = Number(newRelation);
+    if (!value) return;
+    const updates = { moneyChipsRelation: value };
+    await Promise.all([
+      updateDoc(doc(db, `groups/${groupId}/tables/${tableId}`), updates),
+      updateDoc(doc(db, `groups/${groupId}`), updates),
+    ]);
+    setMoneyChipsRelation(value);
+    setEditRelation(false);
   };
 
   return (
@@ -238,67 +193,110 @@ const Split = ({ isManagerMode }) => {
         חישוב העברות
       </h1>
 
-      {/* <AddFoodExpenses tableId={tableId} isManagerMode={isManagerMode} /> */}
       <AddFoodExpenses
         tableId={tableId}
         groupId={groupId}
         isManagerMode={isManagerMode}
       />
 
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold" dir="rtl">
-          רשימת שחקנים:
-        </h2>
+      <div className="mb-6" dir="rtl">
+        <h2 className="text-xl font-semibold">רשימת שחקנים:</h2>
         <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {players.map((player) => (
+          {players.map((p) => (
             <li
-              key={player.id}
-              className="p-4 border rounded-lg shadow-sm bg-white border-gray-300"
+              key={p.id}
+              className="p-4 border rounded-lg bg-white shadow-sm border-gray-300"
             >
-              <h4 className="text-lg font-semibold" dir="rtl">
-                {player.name}
-              </h4>
-              <p className="text-gray-700" dir="rtl">
-                כניסות: {player.entries}
-              </p>
-              <p className="text-gray-700" dir="rtl">
-                ז׳יטונים סופיים: {player.finalTotalChips || 0}
+              <h4 className="text-lg font-semibold">{p.name}</h4>
+              <p className="text-gray-700">כניסות: {p.entries}</p>
+              <p className="text-gray-700">
+                ז׳יטונים סופיים: {p.finalTotalChips || 0}
               </p>
             </li>
           ))}
         </ul>
       </div>
 
+      <div
+        className="mt-6 border rounded-lg p-4 bg-white shadow-sm max-w-md mx-auto"
+        dir="rtl"
+      >
+        <h2 className="text-lg font-semibold mb-2">יחס ש״ח לז׳יטונים</h2>
+        {moneyChipsRelation !== null && !editRelation ? (
+          <div className="flex justify-between items-center">
+            <span>על כל 1 ש״ח → {moneyChipsRelation.toFixed(2)} ז׳יטונים</span>
+            <button
+              onClick={() => {
+                setNewRelation(moneyChipsRelation);
+                setEditRelation(true);
+              }}
+              className="text-blue-600 hover:underline"
+            >
+              ערוך
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              value={newRelation}
+              onChange={(e) => setNewRelation(e.target.value)}
+              className="border p-1 rounded w-24"
+              placeholder="הכנס יחס"
+            />
+            <button
+              onClick={saveRelation}
+              className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+            >
+              שמור
+            </button>
+            {moneyChipsRelation !== null && (
+              <button
+                onClick={() => {
+                  setEditRelation(false);
+                  setNewRelation("");
+                }}
+                className="text-gray-500 hover:underline"
+              >
+                ביטול
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="flex justify-center mt-6 gap-4 flex-wrap">
         <button
           onClick={calculateSplit}
-          className="py-2 px-4 rounded-lg bg-blue-500 hover:bg-blue-600 text-white transition"
+          disabled={!moneyChipsRelation}
+          className={`py-2 px-4 rounded-lg text-white transition ${
+            moneyChipsRelation
+              ? "bg-blue-500 hover:bg-blue-600"
+              : "bg-gray-400 cursor-not-allowed"
+          }`}
         >
           חשב העברות
         </button>
-
         <button
           onClick={calculateFoodSplit}
           className="py-2 px-4 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-white transition"
         >
           חשב העברות אוכל
         </button>
-
         {transactions.length > 0 && (
           <button
-            onClick={sendToWhatsApp}
-            className="flex items-center bg-green-500 text-white py-2 px-4 rounded-lg shadow-md hover:bg-green-600 transition duration-200"
+            onClick={() => sendToWhatsApp(transactions, "העברות")}
+            className="flex items-center bg-green-500 text-white py-2 px-4 rounded-lg shadow-md hover:bg-green-600"
             dir="rtl"
           >
             <span>שלח כהודעה בwhatsapp</span>
             <img src={whatsappIcon} alt="WhatsApp" className="w-5 h-5 mr-2" />
           </button>
         )}
-
         {foodTransactions.length > 0 && (
           <button
-            onClick={sendFoodToWhatsApp}
-            className="flex items-center bg-green-600 text-white py-2 px-4 rounded-lg shadow-md hover:bg-green-700 transition duration-200"
+            onClick={() => sendToWhatsApp(foodTransactions, "אוכל")}
+            className="flex items-center bg-green-600 text-white py-2 px-4 rounded-lg shadow-md hover:bg-green-700"
             dir="rtl"
           >
             <span>שלח הוצאות אוכל כהודעה בwhatsapp</span>
@@ -313,9 +311,9 @@ const Split = ({ isManagerMode }) => {
             תוצאות החישוב:
           </h2>
           <ul className="space-y-4">
-            {transactions.map((tx, index) => (
+            {transactions.map((tx, i) => (
               <li
-                key={index}
+                key={i}
                 className="p-4 border rounded-lg shadow-sm bg-white border-gray-300"
                 dir="rtl"
               >
@@ -336,9 +334,9 @@ const Split = ({ isManagerMode }) => {
             תוצאות חישוב אוכל:
           </h2>
           <ul className="space-y-4">
-            {foodTransactions.map((tx, index) => (
+            {foodTransactions.map((tx, i) => (
               <li
-                key={index}
+                key={i}
                 className="p-4 border rounded-lg shadow-sm bg-white border-gray-300"
                 dir="rtl"
               >
