@@ -10,7 +10,7 @@ import {
 import { db } from "../config/firebase";
 
 const Leftovers = ({ isManagerMode }) => {
-  const { tableId } = useParams();
+  const { tableId, groupId } = useParams();
   const navigate = useNavigate();
 
   const [players, setPlayers] = useState([]);
@@ -25,7 +25,7 @@ const Leftovers = ({ isManagerMode }) => {
         // Fetch players who participate in leftovers
         const playersCollectionRef = collection(
           db,
-          `tables/${tableId}/players`
+          `groups/${groupId}/tables/${tableId}/players`
         );
         const playersSnapshot = await getDocs(playersCollectionRef);
         const playersData = playersSnapshot.docs
@@ -33,7 +33,7 @@ const Leftovers = ({ isManagerMode }) => {
           .filter((player) => player.isParticipatesLeftovers);
 
         // Fetch leftovers amount from the table doc
-        const tableDocRef = doc(db, `tables/${tableId}`);
+        const tableDocRef = doc(db, `groups/${groupId}/tables/${tableId}`);
         const tableSnapshot = await getDoc(tableDocRef);
         const leftoversData = tableSnapshot.data()?.leftovers || 0;
 
@@ -57,7 +57,8 @@ const Leftovers = ({ isManagerMode }) => {
 
         if (playersData.length === 0 || leftoversData === 0) {
           setTimeout(() => {
-            navigate(`/split/${tableId}`);
+            // navigate(`/split/${tableId}`);
+            navigate(`/split/group/${groupId}/table/${tableId}`);
           }, 2500); // Redirect after 2.5 seconds
         }
       } catch (error) {
@@ -82,7 +83,7 @@ const Leftovers = ({ isManagerMode }) => {
       // Update the selected player
       const playerDocRef = doc(
         db,
-        `tables/${tableId}/players`,
+        `groups/${groupId}/tables/${tableId}/players`,
         selectedPlayerId
       );
       const selectedPlayer = players.find(
@@ -104,7 +105,8 @@ const Leftovers = ({ isManagerMode }) => {
 
       // Wait 2 seconds before redirecting
       setTimeout(() => {
-        navigate(`/split/${tableId}`);
+        // navigate(`/split/${tableId}`);
+        navigate(`/split/group/${groupId}/table/${tableId}`);
       }, 2000);
     } catch (error) {
       console.error("Error updating player:", error);

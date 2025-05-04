@@ -4,7 +4,7 @@ import { addDoc, collection, doc, setDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import DropdownWithSearch from "../components/DropdownWithSearch";
 
-const CreateATable = () => {
+const CreateATable = ({ groupId }) => {
   const [roomTitle, setRoomTitle] = useState("");
   const [roomDescription, setRoomDescription] = useState("");
   const [players, setPlayers] = useState([]);
@@ -33,7 +33,7 @@ const CreateATable = () => {
     }
   };
 
-  const tablesCollection = collection(db, "tables");
+  const tablesCollection = collection(db, `groups/${groupId}/tables`);
 
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
@@ -145,7 +145,7 @@ const CreateATable = () => {
         });
       }
 
-      navigate(`/table/${tableDocRef.id}`);
+      navigate(`/group/${groupId}/table/${tableDocRef.id}`);
     } catch (error) {
       console.error("Error creating room: ", error);
     }
@@ -157,7 +157,10 @@ const CreateATable = () => {
         צור שולחן פוקר
       </h2>
 
-      <DropdownWithSearch onSelectPlayer={handlePlayerSelect} />
+      <DropdownWithSearch
+        groupId={groupId}
+        onSelectPlayer={handlePlayerSelect}
+      />
 
       <div className="mb-4 flex flex-col">
         <label

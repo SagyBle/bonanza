@@ -2,30 +2,30 @@ import { useState, useEffect } from "react";
 import { db } from "../config/firebase";
 import { collection, getDocs } from "firebase/firestore";
 
-const AddPlayerDropdown = ({ onSelectPlayer, playersToReduce }) => {
+const AddPlayerDropdown = ({ groupId, onSelectPlayer, playersToReduce }) => {
   const [inputValue, setInputValue] = useState("");
   const [playersList, setPlayersList] = useState([]);
   const [filteredPlayers, setFilteredPlayers] = useState([]);
   const [selectedPlayers, setSelectedPlayers] = useState([]);
 
-  // Fetch players from Firestore (or any other source)
   useEffect(() => {
     const fetchPlayers = async () => {
-      const querySnapshot = await getDocs(collection(db, "generalPlayers"));
+      const querySnapshot = await getDocs(
+        collection(db, `groups/${groupId}/generalPlayers`)
+      );
       const players = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         name: doc.data().name,
       }));
       setPlayersList(players);
-      setFilteredPlayers(players); // Initially show all players
+      setFilteredPlayers(players);
     };
     fetchPlayers();
-  }, []);
+  }, [groupId]);
 
-  // Filter players based on the search input
   useEffect(() => {
     if (inputValue === "") {
-      setFilteredPlayers([]); // Set to empty array when input is empty
+      setFilteredPlayers([]);
     } else {
       setFilteredPlayers(
         playersList.filter((player) =>
@@ -35,21 +35,18 @@ const AddPlayerDropdown = ({ onSelectPlayer, playersToReduce }) => {
     }
   }, [inputValue, playersList]);
 
-  // Handle input change
   const handleInputChange = (e) => {
     setInputValue(e.target.value);
   };
 
-  // Handle player selection
   const handlePlayerSelect = (player) => {
-    // Add to the selected players list
     if (!selectedPlayers.some((p) => p.id === player.id)) {
       setSelectedPlayers([...selectedPlayers, player]);
     }
-    setInputValue(""); // Clear input after selecting player
-    setFilteredPlayers([]); // Reset the filtered players list
+    setInputValue("");
+    setFilteredPlayers([]);
 
-    if (onSelectPlayer) onSelectPlayer(player); // Call the onSelectPlayer callback
+    if (onSelectPlayer) onSelectPlayer(player);
   };
 
   return (

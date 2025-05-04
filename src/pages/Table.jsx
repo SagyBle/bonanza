@@ -34,7 +34,7 @@ import AddPlayerDropdown from "../components/AddPlayerDropdown";
 import AddPlayerModal from "../components/AddPlayerModal";
 
 const Table = ({ isManagerMode, soundEnabled }) => {
-  const { tableId } = useParams();
+  const { groupId, tableId } = useParams();
   const navigate = useNavigate();
   const [players, setPlayers] = useState([]);
   const [recentlyUpdated, setRecentlyUpdated] = useState({});
@@ -59,7 +59,9 @@ const Table = ({ isManagerMode, soundEnabled }) => {
 
   useEffect(() => {
     const checkTableExists = async () => {
-      const tableDocRef = doc(db, `tables`, tableId);
+      // const tableDocRef = doc(db, `groups/${groupId}/tables`, tableId);
+      const tableDocRef = doc(db, `groups/${groupId}/tables/${tableId}`);
+
       const tableDocSnap = await getDoc(tableDocRef);
 
       if (!tableDocSnap.exists()) {
@@ -72,7 +74,10 @@ const Table = ({ isManagerMode, soundEnabled }) => {
 
     checkTableExists();
 
-    const playersRef = collection(db, `tables/${tableId}/players`);
+    const playersRef = collection(
+      db,
+      `groups/${groupId}/tables/${tableId}/players`
+    );
 
     // Set up a real-time listener for the players collection
     const unsubscribe = onSnapshot(playersRef, (snapshot) => {
@@ -90,7 +95,11 @@ const Table = ({ isManagerMode, soundEnabled }) => {
 
   const handleAddEntry = async (playerId) => {
     try {
-      const playerDocRef = doc(db, `tables/${tableId}/players`, playerId);
+      const playerDocRef = doc(
+        db,
+        `groups/${groupId}/tables/${tableId}/players`,
+        playerId
+      );
       const playerSnapshot = await getDoc(playerDocRef);
       const player = playerSnapshot.data();
 
@@ -106,7 +115,10 @@ const Table = ({ isManagerMode, soundEnabled }) => {
       }));
 
       // Add history record for the entry increase
-      const historyCollectionRef = collection(db, `tables/${tableId}/history`);
+      const historyCollectionRef = collection(
+        db,
+        `groups/${groupId}/tables/${tableId}/history`
+      );
       await addDoc(historyCollectionRef, {
         playerId: playerDocRef.id, // Add playerId
         playerName: player.name, // Add playerName
@@ -117,13 +129,22 @@ const Table = ({ isManagerMode, soundEnabled }) => {
 
       // Play sound based on the number of entries if sound is enabled
       if (soundEnabled) {
-        const entries = player.entries + 1; // Since we're incrementing by 1 here
+        const entries = player.entries + 1;
+        let soundSrc = null;
+
         if (entries < 4) {
-          cachingAudio.play(); // Play caching sound
+          soundSrc = cachingSound;
         } else if (entries === 4) {
-          sheepAudio.play(); // Play sheep sound
+          soundSrc = sheepSound;
         } else if (entries > 4) {
-          policeAudio.play(); // Play police sound
+          soundSrc = policeSound;
+        }
+
+        if (soundSrc) {
+          const audio = new Audio(soundSrc);
+          audio.play().catch((e) => {
+            console.warn("Autoplay blocked or failed:", e);
+          });
         }
       }
     } catch (error) {
@@ -133,7 +154,11 @@ const Table = ({ isManagerMode, soundEnabled }) => {
 
   const handleReduceEntry = async (playerId) => {
     try {
-      const playerDocRef = doc(db, `tables/${tableId}/players`, playerId);
+      const playerDocRef = doc(
+        db,
+        `groups/${groupId}/tables/${tableId}/players`,
+        playerId
+      );
       const playerSnapshot = await getDoc(playerDocRef);
       const player = playerSnapshot.data();
 
@@ -144,7 +169,10 @@ const Table = ({ isManagerMode, soundEnabled }) => {
       });
 
       // Add history record for the entry decrease
-      const historyCollectionRef = collection(db, `tables/${tableId}/history`);
+      const historyCollectionRef = collection(
+        db,
+        `groups/${groupId}/tables/${tableId}/history`
+      );
       await addDoc(historyCollectionRef, {
         playerId: playerDocRef.id, // Add playerId
         playerName: player.name, // Add playerName
@@ -177,7 +205,10 @@ const Table = ({ isManagerMode, soundEnabled }) => {
 
   const resetEntriesToOne = async () => {
     try {
-      const playersRef = collection(db, `tables/${tableId}/players`);
+      const playersRef = collection(
+        db,
+        `groups/${groupId}/tables/${tableId}/players`
+      );
       const snapshot = await getDocs(playersRef);
 
       const updatePromises = snapshot.docs.map((doc) =>
@@ -206,11 +237,11 @@ const Table = ({ isManagerMode, soundEnabled }) => {
   //     };
 
   //     // Add the new player to the Firestore table's players collection
-  //     const playersRef = collection(db, `tables/${tableId}/players`);
+  //     const playersRef = collection(db, `groups/${groupId}/tables/${tableId}/players`);
   //     const playerDocRef = await addDoc(playersRef, newPlayer);
 
   //     // Add a history entry for the new player
-  //     const historyRef = collection(db, `tables/${tableId}/history`);
+  //     const historyRef = collection(db, `groups/${groupId}/tables/${tableId}/history`);
   //     await addDoc(historyRef, {
   //       type: "player_added",
   //       playerName: newPlayerName,
@@ -234,13 +265,20 @@ const Table = ({ isManagerMode, soundEnabled }) => {
       if (!confirmDelete) return;
 
       // Get the reference to the player document
-      const playerDocRef = doc(db, `tables/${tableId}/players`, playerId);
+      const playerDocRef = doc(
+        db,
+        `groups/${groupId}/tables/${tableId}/players`,
+        playerId
+      );
 
       // Delete the player from Firestore
       await deleteDoc(playerDocRef);
 
       // Optionally, you can add a history entry to track the deletion
-      const historyRef = collection(db, `tables/${tableId}/history`);
+      const historyRef = collection(
+        db,
+        `groups/${groupId}/tables/${tableId}/history`
+      );
       await addDoc(historyRef, {
         type: "player_deleted",
         playerId,
@@ -288,7 +326,11 @@ const Table = ({ isManagerMode, soundEnabled }) => {
   const handleSubmitPlayer = async () => {
     if (!playerToAdd) return;
 
-    const playerDocRef = doc(db, `tables/${tableId}/players`, playerToAdd.id);
+    const playerDocRef = doc(
+      db,
+      `groups/${groupId}/tables/${tableId}/players`,
+      playerToAdd.id
+    );
 
     try {
       await setDoc(playerDocRef, {
@@ -298,7 +340,10 @@ const Table = ({ isManagerMode, soundEnabled }) => {
       });
 
       // Add a history entry for the added player
-      const historyRef = collection(db, `tables/${tableId}/history`);
+      const historyRef = collection(
+        db,
+        `groups/${groupId}/tables/${tableId}/history`
+      );
       await addDoc(historyRef, {
         type: "player_added",
         playerName: playerToAdd.name,
@@ -317,6 +362,8 @@ const Table = ({ isManagerMode, soundEnabled }) => {
   return (
     <div className="p-6 max-w-4xl mx-auto bg-white ">
       <AddFoodExpenses tableId={tableId} isManagerMode={isManagerMode} />
+
+      <span>{groupId}</span>
 
       {/* Display the title and description of the table */}
       {tableData.tableImageUrl && (
@@ -485,6 +532,7 @@ const Table = ({ isManagerMode, soundEnabled }) => {
         <CloseTableModal
           isOpen={showCloseTableModal}
           onClose={() => setShowCloseTableModal(false)}
+          groupId={groupId}
           tableId={tableId}
         />
       )}
@@ -492,6 +540,7 @@ const Table = ({ isManagerMode, soundEnabled }) => {
       <h2 className="mt-16">הוספת שחקנים נוספים</h2>
       {/* <DropdownWithSearch onSelectPlayer={handlePlayerSelect} /> */}
       <AddPlayerDropdown
+        groupId={groupId}
         onSelectPlayer={(player) => handleAddPlayer(player)}
         playersToReduce={players}
       />
@@ -506,7 +555,8 @@ const Table = ({ isManagerMode, soundEnabled }) => {
         />
       )}
       <div className="mt-4 flex items-center justify-between space-x-4"></div>
-      <History tableId={tableId} />
+      {/* <History tableId={tableId} /> */}
+      <History groupId={groupId} tableId={tableId} />
     </div>
   );
 };

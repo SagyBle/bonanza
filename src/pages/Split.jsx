@@ -17,7 +17,7 @@ import AddFoodExpenses from "@/components/AddFoodExpenses";
 import { generalMinimalSettlement } from "@/utils/generalBalance.utils";
 
 const Split = ({ isManagerMode }) => {
-  const { tableId } = useParams();
+  const { tableId, groupId } = useParams();
   const [players, setPlayers] = useState([]);
   const [generalPlayers, setGeneralPlayers] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -26,7 +26,9 @@ const Split = ({ isManagerMode }) => {
   useEffect(() => {
     const fetchTableAndPlayers = async () => {
       try {
-        const tableDocSnap = await getDoc(doc(db, "tables", tableId));
+        const tableDocSnap = await getDoc(
+          doc(db, `groups/${groupId}/tables/${tableId}`)
+        );
         if (tableDocSnap.exists()) {
           const tableData = tableDocSnap.data();
           if (tableData.pokerSettlement?.length > 0) {
@@ -39,7 +41,7 @@ const Split = ({ isManagerMode }) => {
 
         const playersCollectionRef = collection(
           db,
-          `tables/${tableId}/players`
+          `groups/${groupId}/tables/${tableId}/players`
         );
         const playersSnapshot = await getDocs(playersCollectionRef);
         const playersData = playersSnapshot.docs.map((doc) => ({
@@ -53,7 +55,7 @@ const Split = ({ isManagerMode }) => {
     };
 
     fetchTableAndPlayers();
-  }, [tableId]);
+  }, [groupId, tableId]);
 
   useEffect(() => {
     const fetchGeneralPlayers = async () => {
@@ -65,9 +67,10 @@ const Split = ({ isManagerMode }) => {
         }
 
         const generalPlayersQuery = query(
-          collection(db, "generalPlayers"),
+          collection(db, `groups/${groupId}/generalPlayers`),
           where("__name__", "in", playerIds)
         );
+
         const querySnapshot = await getDocs(generalPlayersQuery);
         const fetchedPlayers = querySnapshot.docs.map((doc) => ({
           id: doc.id,
@@ -107,7 +110,7 @@ const Split = ({ isManagerMode }) => {
     setTransactions(formattedTransactions);
 
     try {
-      await updateDoc(doc(db, "tables", tableId), {
+      await updateDoc(doc(db, `groups/${groupId}/tables/${tableId}`), {
         pokerSettlement: formattedTransactions,
       });
       console.log("Poker settlement saved successfully.");
@@ -120,7 +123,10 @@ const Split = ({ isManagerMode }) => {
     try {
       console.log("🔄 Starting food split calculation...");
 
-      const foodExpensesRef = collection(db, `tables/${tableId}/foodExpenses`);
+      const foodExpensesRef = collection(
+        db,
+        `groups/${groupId}/tables/${tableId}/foodExpenses`
+      );
       const foodExpensesSnapshot = await getDocs(foodExpensesRef);
       const foodExpenses = foodExpensesSnapshot.docs.map((doc) => doc.data());
 
@@ -173,7 +179,7 @@ const Split = ({ isManagerMode }) => {
 
       setFoodTransactions(formattedFoodTransactions);
 
-      await updateDoc(doc(db, "tables", tableId), {
+      await updateDoc(doc(db, `groups/${groupId}/tables/${tableId}`), {
         foodSettlement: formattedFoodTransactions,
       });
 
@@ -196,7 +202,7 @@ const Split = ({ isManagerMode }) => {
       .join("\n");
 
     const footer = "\n\nנוצר ע״י bonanzApp";
-    const link = `\nhttps://bonanzapp.netlify.app/table/${tableId}`;
+    const link = `\nhttps://bonanzapp.com/group/${groupId}/table/${tableId}`;
 
     const whatsappURL = `https://wa.me/?text=${encodeURIComponent(
       message + footer + link
@@ -218,7 +224,7 @@ const Split = ({ isManagerMode }) => {
       .join("\n");
 
     const footer = "\n\nנוצר ע״י bonanzApp";
-    const link = `\nhttps://bonanzapp.netlify.app/table/${tableId}`;
+    const link = `\nhttps://bonanzapp.com/group/${groupId}/table/${tableId}`;
 
     const whatsappURL = `https://wa.me/?text=${encodeURIComponent(
       message + footer + link
@@ -232,7 +238,12 @@ const Split = ({ isManagerMode }) => {
         חישוב העברות
       </h1>
 
-      <AddFoodExpenses tableId={tableId} isManagerMode={isManagerMode} />
+      {/* <AddFoodExpenses tableId={tableId} isManagerMode={isManagerMode} /> */}
+      <AddFoodExpenses
+        tableId={tableId}
+        groupId={groupId}
+        isManagerMode={isManagerMode}
+      />
 
       <div className="mb-6">
         <h2 className="text-xl font-semibold" dir="rtl">

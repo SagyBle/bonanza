@@ -1,4 +1,6 @@
 import cloudinary from "cloudinary";
+import dotenv from "dotenv";
+dotenv.config();
 
 cloudinary.v2.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -15,7 +17,7 @@ export const handler = async (event) => {
   }
 
   try {
-    const { file } = JSON.parse(event.body); // file = base64 string
+    const { file } = JSON.parse(event.body); // base64 string
 
     const result = await cloudinary.v2.uploader.upload(file, {
       folder: "samples/ecommerce",

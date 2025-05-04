@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../config/firebase";
 
-const SumupTable = ({ players, tableId }) => {
+const SumupTable = ({ players, groupId, tableId }) => {
   const [chipInputs, setChipInputs] = useState();
   const [totalChipsInInput, setTotalChipsInInput] = useState();
 
@@ -48,7 +48,12 @@ const SumupTable = ({ players, tableId }) => {
 
     // Update all players in the database
     const batchUpdates = updatedPlayers.map(({ id, finalTotalChips }) => {
-      const playerDocRef = doc(db, `tables/${tableId}/players`, id);
+      // const playerDocRef = doc(db, `tables/${tableId}/players`, id);
+      const playerDocRef = doc(
+        db,
+        `groups/${groupId}/tables/${tableId}/players`,
+        id
+      );
       return updateDoc(playerDocRef, { finalTotalChips });
     });
 

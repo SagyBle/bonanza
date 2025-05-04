@@ -2,7 +2,7 @@ import { doc, updateDoc } from "firebase/firestore";
 import React, { useState } from "react";
 import { db } from "../config/firebase";
 
-const SumupPlayerModal = ({ player, tableId, onClose }) => {
+const SumupPlayerModal = ({ player, groupId, tableId, onClose }) => {
   const [isConfirmed, setIsConfirmed] = useState(false); // Tracks if confirmation is done
   const [inputValue, setInputValue] = useState(""); // Tracks the input value
   const [isAdding, setIsAdding] = useState(true); // Tracks whether to add or subtract
@@ -20,7 +20,12 @@ const SumupPlayerModal = ({ player, tableId, onClose }) => {
     const numericValue = parseInt(inputValue || "0", 10);
     const signedValue = isAdding ? numericValue : -numericValue;
 
-    const playerDocRef = doc(db, `tables/${tableId}/players`, player.id);
+    // const playerDocRef = doc(db, `tables/${tableId}/players`, player.id);
+    const playerDocRef = doc(
+      db,
+      `groups/${groupId}/tables/${tableId}/players`,
+      player.id
+    );
 
     await updateDoc(playerDocRef, {
       finalTotalChips: signedValue,
