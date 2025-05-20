@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { collection, addDoc } from "firebase/firestore";
 import { db } from "../config/firebase";
 
-const AddGeneralPlayer = () => {
+const AddGeneralPlayer = ({ groupId }) => {
   const [playerName, setPlayerName] = useState("");
   const [playerPhone, setPlayerPhone] = useState("");
   const [isAdding, setIsAdding] = useState(false);
