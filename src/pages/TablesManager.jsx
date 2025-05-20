@@ -9,6 +9,7 @@ import tableIcon from "../assets/icons/table.svg";
 import sheepIcon from "../assets/icons/sheep.svg";
 import AddFoodExpenses from "../components/AddFoodExpenses";
 import { migrateToGroup } from "@/utils/migrations.utils";
+import GroupSettings from "@/components/GroupSettings";
 
 const TablesManager = ({ isManagerMode }) => {
   const { groupId } = useParams();
@@ -200,6 +201,8 @@ const TablesManager = ({ isManagerMode }) => {
           </button>
         )}
       </div>
+
+      <GroupSettings groupId={groupId} />
 
       <div style={{ marginTop: "20px" }} className="flex flex-col gap-8 ">
         {showCreateForm && <CreateATable groupId={groupId} />}
