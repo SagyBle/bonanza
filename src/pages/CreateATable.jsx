@@ -11,6 +11,8 @@ const CreateATable = ({ groupId }) => {
   const [image, setImage] = useState(null);
   const [imageUrl, setImageUrl] = useState(null);
   const [previewImageUrl, setPreviewImageUrl] = useState(null);
+  const [loadingCreateTable, setLoadingCreateTable] = useState(false);
+  const [errorCreateTable, setErrorCreateTable] = useState(null);
   const navigate = useNavigate();
 
   const handleTitleChange = (e) => {
@@ -91,39 +93,42 @@ const CreateATable = ({ groupId }) => {
   // const uploadImage = (files) =>
 
   const handleCreateRoom = async () => {
-    const roomCreationTime = new Date().toISOString();
-
-    const defaultTitle = `השולחן של ${new Date().toLocaleDateString("he-IL", {
-      weekday: "long",
-    })} - ה${new Date().toLocaleDateString("he-IL", {
-      day: "numeric",
-      month: "numeric",
-      year: "2-digit",
-    })}`;
-
-    let imageUrlResponse = null;
-
-    if (image) {
-      try {
-        imageUrlResponse = await uploadImageToCloudinaryViaServer(image);
-        console.log(
-          "✅ Image uploaded during room creation:",
-          imageUrlResponse
-        );
-      } catch (err) {
-        console.error("❌ Failed to upload image during room creation:", err);
-        alert("Image upload failed. Creating table without image.");
-      }
-    }
-
-    const newTable = {
-      createdAt: roomCreationTime,
-      title: roomTitle || defaultTitle,
-      description: roomDescription,
-      ...(imageUrlResponse && { tableImageUrl: imageUrlResponse }),
-    };
+    setLoadingCreateTable(true);
+    setErrorCreateTable(null);
 
     try {
+      const roomCreationTime = new Date().toISOString();
+
+      const defaultTitle = `השולחן של ${new Date().toLocaleDateString("he-IL", {
+        weekday: "long",
+      })} - ה${new Date().toLocaleDateString("he-IL", {
+        day: "numeric",
+        month: "numeric",
+        year: "2-digit",
+      })}`;
+
+      let imageUrlResponse = null;
+
+      if (image) {
+        try {
+          imageUrlResponse = await uploadImageToCloudinaryViaServer(image);
+          console.log(
+            "✅ Image uploaded during room creation:",
+            imageUrlResponse
+          );
+        } catch (err) {
+          console.error("❌ Failed to upload image during room creation:", err);
+          alert("Image upload failed. Creating table without image.");
+        }
+      }
+
+      const newTable = {
+        createdAt: roomCreationTime,
+        title: roomTitle || defaultTitle,
+        description: roomDescription,
+        ...(imageUrlResponse && { tableImageUrl: imageUrlResponse }),
+      };
+
       const tableDocRef = await addDoc(tablesCollection, newTable);
       const historyCollectionRef = collection(tableDocRef, "history");
 
@@ -148,6 +153,9 @@ const CreateATable = ({ groupId }) => {
       navigate(`/group/${groupId}/table/${tableDocRef.id}`);
     } catch (error) {
       console.error("Error creating room: ", error);
+      setErrorCreateTable("שגיאה ביצירת השולחן. אנא נסה שוב.");
+    } finally {
+      setLoadingCreateTable(false);
     }
   };
 
@@ -156,6 +164,13 @@ const CreateATable = ({ groupId }) => {
       <h2 className="text-4xl font-bold text-center mb-6 text-yellow-400 drop-shadow-md">
         צור שולחן פוקר
       </h2>
+
+      {/* Error Message */}
+      {errorCreateTable && (
+        <div className="mb-4 p-4 bg-red-500 text-white rounded-lg text-center">
+          {errorCreateTable}
+        </div>
+      )}
 
       <DropdownWithSearch
         groupId={groupId}
@@ -179,6 +194,7 @@ const CreateATable = ({ groupId }) => {
           placeholder="הכנס כותרת לשולחן..."
           required
           dir="rtl"
+          disabled={loadingCreateTable}
         />
       </div>
 
@@ -199,6 +215,7 @@ const CreateATable = ({ groupId }) => {
           rows="4"
           required
           dir="rtl"
+          disabled={loadingCreateTable}
         />
       </div>
 
@@ -217,6 +234,7 @@ const CreateATable = ({ groupId }) => {
           onChange={handleImageChange}
           className="w-full p-3 mt-2 rounded-lg bg-gray-900 text-white shadow-lg border border-green-500 focus:ring-2 focus:ring-green-600 focus:outline-none"
           dir="rtl"
+          disabled={loadingCreateTable}
         />
         {image && (
           <div className="mt-4 flex flex-col items-center border border-green-600 p-4 rounded-lg bg-gray-800 shadow-md">
@@ -245,9 +263,40 @@ const CreateATable = ({ groupId }) => {
 
       <button
         onClick={handleCreateRoom}
-        className="w-full py-3 px-4 mt-6 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg shadow-md transition-colors duration-300"
+        disabled={loadingCreateTable}
+        className={`w-full py-3 px-4 mt-6 font-bold rounded-lg shadow-md transition-colors duration-300 flex items-center justify-center gap-2 ${
+          loadingCreateTable
+            ? "bg-gray-500 text-gray-300 cursor-not-allowed"
+            : "bg-green-600 hover:bg-green-700 text-white"
+        }`}
       >
-        צור שולחן
+        {loadingCreateTable ? (
+          <>
+            <svg
+              className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            יוצר שולחן...
+          </>
+        ) : (
+          "צור שולחן"
+        )}
       </button>
     </div>
   );

@@ -24,83 +24,85 @@ function App() {
   const [isManagerMode, setIsManagerMode] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   return (
-    <div className="App">
+    <div className="App min-h-screen flex flex-col">
       <Router>
-        <header>
-          <Header
-            isManagerMode={isManagerMode}
-            setIsManagerMode={setIsManagerMode}
-            soundEnabled={soundEnabled}
-            setSoundEnabled={setSoundEnabled}
-          />
-        </header>
-        <div className="w-100 bg-red-50 flex pl-4 pt-1">
-          <span>v2.1.0</span>
+        <Header
+          isManagerMode={isManagerMode}
+          setIsManagerMode={setIsManagerMode}
+          soundEnabled={soundEnabled}
+          setSoundEnabled={setSoundEnabled}
+        />
+
+        {/* Version indicator - moved to top right */}
+        <div className="absolute top-20 right-4 z-10 bg-red-100 px-2 py-1 rounded text-xs text-red-700">
+          v2.1.0
         </div>
 
-        <Routes>
-          <Route
-            path="/groups"
-            element={<GroupsManager isManagerMode={isManagerMode} />}
-          />
-          <Route
-            path="/group/:groupId"
-            element={<Group isManagerMode={isManagerMode} />}
-          />
-          {/* <Route
-            path="/group/:groupId/tables"
-            element={<TablesManager isManagerMode={isManagerMode} />}
-          /> */}
-          {/* <Route
-            path="group/:groupId/table/:tableId"
-            element={
-              <Table
-                isManagerMode={isManagerMode}
-                soundEnabled={soundEnabled}
-              />
-            }
-          /> */}
-          <Route
-            path="/group/:groupId/table/:tableId"
-            element={
-              <Table
-                isManagerMode={isManagerMode}
-                soundEnabled={soundEnabled}
-              />
-            }
-          />
-          <Route
-            // path="/sumup/:tableId"
-            path="/sumup/group/:groupId/table/:tableId"
-            element={<Sumup isManagerMode={isManagerMode} />}
-          />
-          <Route
-            // path="/leftovers/:tableId"
-            path="/leftovers/group/:groupId/table/:tableId"
-            element={<Leftovers isManagerMode={isManagerMode} />}
-          />
-          <Route
-            path="/split/group/:groupId/table/:tableId"
-            element={<Split isManagerMode={isManagerMode} />}
-          />
-          <Route
-            path="/unions"
-            element={<UnionsManager isManagerMode={isManagerMode} />}
-          />
-          <Route
-            path="/union/:unionId"
-            element={<Union isManagerMode={isManagerMode} />}
-          />
-          <Route
-            path="/union/:unionId"
-            element={<Union isManagerMode={isManagerMode} />}
-          />
+        {/* Main content area - takes up all available space */}
+        <main className="flex-1">
+          <Routes>
+            <Route
+              path="/groups"
+              element={<GroupsManager isManagerMode={isManagerMode} />}
+            />
+            <Route
+              path="/group/:groupId"
+              element={<Group isManagerMode={isManagerMode} />}
+            />
+            {/* <Route
+              path="/group/:groupId/tables"
+              element={<TablesManager isManagerMode={isManagerMode} />}
+            /> */}
+            {/* <Route
+              path="group/:groupId/table/:tableId"
+              element={
+                <Table
+                  isManagerMode={isManagerMode}
+                  soundEnabled={soundEnabled}
+                />
+              }
+            /> */}
+            <Route
+              path="/group/:groupId/table/:tableId"
+              element={
+                <Table
+                  isManagerMode={isManagerMode}
+                  soundEnabled={soundEnabled}
+                />
+              }
+            />
+            <Route
+              // path="/sumup/:tableId"
+              path="/sumup/group/:groupId/table/:tableId"
+              element={<Sumup isManagerMode={isManagerMode} />}
+            />
+            <Route
+              // path="/leftovers/:tableId"
+              path="/leftovers/group/:groupId/table/:tableId"
+              element={<Leftovers isManagerMode={isManagerMode} />}
+            />
+            <Route
+              path="/split/group/:groupId/table/:tableId"
+              element={<Split isManagerMode={isManagerMode} />}
+            />
+            <Route
+              path="/unions"
+              element={<UnionsManager isManagerMode={isManagerMode} />}
+            />
+            <Route
+              path="/union/:unionId"
+              element={<Union isManagerMode={isManagerMode} />}
+            />
+            <Route
+              path="/union/:unionId"
+              element={<Union isManagerMode={isManagerMode} />}
+            />
 
-          <Route path="*" element={<Navigate to="/groups" replace />} />
-        </Routes>
-        <footer>
-          <Footer />
-        </footer>
+            <Route path="*" element={<Navigate to="/groups" replace />} />
+          </Routes>
+        </main>
+
+        <Footer />
       </Router>
     </div>
   );
