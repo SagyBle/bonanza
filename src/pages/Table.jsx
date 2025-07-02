@@ -361,7 +361,11 @@ const Table = ({ isManagerMode, soundEnabled }) => {
 
   return (
     <div className="p-6 max-w-4xl mx-auto bg-white ">
-      <AddFoodExpenses tableId={tableId} isManagerMode={isManagerMode} />
+      <AddFoodExpenses
+        tableId={tableId}
+        groupId={groupId}
+        isManagerMode={isManagerMode}
+      />
 
       <span>{groupId}</span>
 

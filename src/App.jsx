@@ -35,7 +35,7 @@ function App() {
 
         {/* Version indicator - moved to top right */}
         <div className="absolute top-20 right-4 z-10 bg-red-100 px-2 py-1 rounded text-xs text-red-700">
-          v2.1.0
+          v2.2.0
         </div>
 
         {/* Main content area - takes up all available space */}

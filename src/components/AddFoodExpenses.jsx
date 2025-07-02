@@ -6,6 +6,7 @@ import {
   addDoc,
   deleteDoc,
   doc,
+  onSnapshot,
 } from "firebase/firestore";
 
 const AddFoodExpenses = ({ groupId, tableId, isManagerMode }) => {
@@ -25,49 +26,62 @@ const AddFoodExpenses = ({ groupId, tableId, isManagerMode }) => {
   const [splitters, setSplitters] = useState([]);
   const [selectedExpense, setSelectedExpense] = useState(null); // Track selected expense
   const [isEditMode, setIsEditMode] = useState(false); // Track if editing
+  const [isFinishingOrder, setIsFinishingOrder] = useState(false);
+  const [finishOrderError, setFinishOrderError] = useState("");
 
   useEffect(() => {
-    const fetchPlayers = async () => {
-      try {
-        const playersRef = collection(
-          db,
-          `groups/${groupId}/tables/${tableId}/players`
-        );
-        const playerDocs = await getDocs(playersRef);
-        const playersList = playerDocs.docs.map((doc) => ({
+    if (!groupId || !tableId) return;
+
+    const playersRef = collection(
+      db,
+      `groups/${groupId}/tables/${tableId}/players`
+    );
+
+    // Set up real-time subscription to players
+    const unsubscribe = onSnapshot(
+      playersRef,
+      (snapshot) => {
+        const playersList = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
         setPlayers(playersList);
-      } catch (error) {
+      },
+      (error) => {
         console.error("שגיאה בשליפת שחקנים:", error);
       }
-    };
+    );
 
-    fetchPlayers();
-  }, [tableId]);
+    // Cleanup subscription on unmount or when dependencies change
+    return () => unsubscribe();
+  }, [groupId, tableId]);
 
   useEffect(() => {
-    const fetchFoodExpenses = async () => {
-      try {
-        const expensesRef = collection(
-          db,
-          `groups/${groupId}/tables/${tableId}/foodExpenses`
-        );
-        const expenseDocs = await getDocs(expensesRef);
-        const expensesList = expenseDocs.docs.map((doc) => ({
+    if (!groupId || !tableId) return;
+
+    const expensesRef = collection(
+      db,
+      `groups/${groupId}/tables/${tableId}/foodExpenses`
+    );
+
+    // Set up real-time subscription to food expenses
+    const unsubscribe = onSnapshot(
+      expensesRef,
+      (snapshot) => {
+        const expensesList = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
-
         setFoodExpenses(expensesList);
-      } catch (error) {
+      },
+      (error) => {
         console.error("שגיאה בשליפת הזמנות אוכל:", error);
       }
-    };
+    );
 
-    fetchFoodExpenses();
-  }, [tableId]);
+    // Cleanup subscription on unmount or when dependencies change
+    return () => unsubscribe();
+  }, [groupId, tableId]);
 
   useEffect(() => {
     const totalSubOrderAmount = subOrders.reduce(
@@ -83,6 +97,34 @@ const AddFoodExpenses = ({ groupId, tableId, isManagerMode }) => {
 
     setRemainingAmount(newRemainingAmount);
   }, [subOrders, totalAmount]);
+
+  // Recalculate split amounts when splitters change
+  useEffect(() => {
+    if (splitters.length === 0) return;
+
+    setSubOrders((prevSubOrders) => {
+      // Calculate the sum of amounts of non-splitters
+      const nonSplittersTotal = prevSubOrders
+        .filter((order) => !order.split)
+        .reduce((sum, order) => sum + order.amount, 0);
+
+      const remainingSplitAmount = totalAmount - nonSplittersTotal;
+      const newSplitterAmount =
+        splitters.length > 0
+          ? Math.round((remainingSplitAmount / splitters.length) * 100) / 100
+          : 0;
+
+      // Update only the split orders with new amounts
+      return prevSubOrders.map((subOrder) =>
+        subOrder.split
+          ? {
+              ...subOrder,
+              amount: newSplitterAmount,
+            }
+          : subOrder
+      );
+    });
+  }, [splitters, totalAmount]);
 
   const handleAddSubOrder = () => {
     if (!subOrderPayer || !amount || amount <= 0) return;
@@ -164,6 +206,7 @@ const AddFoodExpenses = ({ groupId, tableId, isManagerMode }) => {
     setTotalAmount(0);
     setOrderDetails("");
     setSubOrders([]);
+    setSplitters([]);
     setRemainingAmount(0);
     setAmount("");
     setSubOrderDetails("");
@@ -172,52 +215,60 @@ const AddFoodExpenses = ({ groupId, tableId, isManagerMode }) => {
   };
 
   const handleFinishOrder = async () => {
-    // נחשב את סכום תתי ההזמנות
-    const totalSubOrderAmount = subOrders.reduce(
-      (sum, order) => sum + order.amount,
-      0
-    );
+    // Clear any previous errors
+    setFinishOrderError("");
 
-    console.log("sagy1", totalSubOrderAmount);
-
-    let remainder = totalAmount - totalSubOrderAmount;
-
-    console.log("sagy2", remainder);
-
-    // נעגל לשתי ספרות עשרוניות
-    remainder = Math.round(remainder * 100) / 100;
-
-    console.log("sagy3", remainder);
-
-    // אם יש splitter והשארית קטנה מ-1, נעדכן את האחרון
-    if (splitters.length > 0 && Math.abs(remainder) < 1) {
-      console.log("sagy4", "here");
-
-      const updatedSubOrders = [...subOrders];
-      const lastSplitterIndex = updatedSubOrders
-        .map((s, i) => (s.split ? i : -1))
-        .filter((i) => i !== -1)
-        .pop();
-
-      if (lastSplitterIndex !== undefined) {
-        updatedSubOrders[lastSplitterIndex].amount = parseFloat(
-          (updatedSubOrders[lastSplitterIndex].amount + remainder).toFixed(2)
-        );
-        setSubOrders(updatedSubOrders);
-        remainder = 0; // נחשב כאילו תיקנו את השארית
-      }
-    }
-
-    // נוודא שהיתרה באמת אפס עכשיו
-    const finalTotal = subOrders.reduce((sum, o) => sum + o.amount, 0);
-    const finalRemainder = Math.round((totalAmount - finalTotal) * 100) / 100;
-
-    if (Math.abs(finalRemainder) >= 1) {
-      alert("יש לוודא שסכום השארית שווה לאפס או שארית קטנה תתוקן אוטומטית.");
-      return;
-    }
+    // Set loading state
+    setIsFinishingOrder(true);
 
     try {
+      // נחשב את סכום תתי ההזמנות
+      const totalSubOrderAmount = subOrders.reduce(
+        (sum, order) => sum + order.amount,
+        0
+      );
+
+      console.log("sagy1", totalSubOrderAmount);
+
+      let remainder = totalAmount - totalSubOrderAmount;
+
+      console.log("sagy2", remainder);
+
+      // נעגל לשתי ספרות עשרוניות
+      remainder = Math.round(remainder * 100) / 100;
+
+      console.log("sagy3", remainder);
+
+      // אם יש splitter והשארית קטנה מ-1, נעדכן את האחרון
+      if (splitters.length > 0 && Math.abs(remainder) < 1) {
+        console.log("sagy4", "here");
+
+        const updatedSubOrders = [...subOrders];
+        const lastSplitterIndex = updatedSubOrders
+          .map((s, i) => (s.split ? i : -1))
+          .filter((i) => i !== -1)
+          .pop();
+
+        if (lastSplitterIndex !== undefined) {
+          updatedSubOrders[lastSplitterIndex].amount = parseFloat(
+            (updatedSubOrders[lastSplitterIndex].amount + remainder).toFixed(2)
+          );
+          setSubOrders(updatedSubOrders);
+          remainder = 0; // נחשב כאילו תיקנו את השארית
+        }
+      }
+
+      // נוודא שהיתרה באמת אפס עכשיו
+      const finalTotal = subOrders.reduce((sum, o) => sum + o.amount, 0);
+      const finalRemainder = Math.round((totalAmount - finalTotal) * 100) / 100;
+
+      if (Math.abs(finalRemainder) >= 1) {
+        setFinishOrderError(
+          "יש לוודא שסכום השארית שווה לאפס או שארית קטנה תתוקן אוטומטית."
+        );
+        return;
+      }
+
       const foodExpenseData = {
         title,
         totalPayer,
@@ -227,21 +278,19 @@ const AddFoodExpenses = ({ groupId, tableId, isManagerMode }) => {
         createdAt: new Date().toISOString(),
       };
 
-      const docRef = await addDoc(
+      await addDoc(
         collection(db, `groups/${groupId}/tables/${tableId}/foodExpenses`),
         foodExpenseData
       );
-
-      setFoodExpenses((prev) => [
-        ...prev,
-        { id: docRef.id, ...foodExpenseData },
-      ]);
 
       clearForm();
       setShowSuccessPopup(true);
       setTimeout(() => setShowSuccessPopup(false), 3000);
     } catch (error) {
       console.error("שגיאה בהוספת הוצאה:", error);
+      setFinishOrderError("אירעה שגיאה בעת הוספת ההזמנה. אנא נסה שוב.");
+    } finally {
+      setIsFinishingOrder(false);
     }
   };
 
@@ -249,11 +298,7 @@ const AddFoodExpenses = ({ groupId, tableId, isManagerMode }) => {
     (player) => !subOrders.some((order) => order.playerId === player.id)
   );
 
-  const handleDeleteFoodExpense = async (
-    expenseId,
-    tableId,
-    setFoodExpenses
-  ) => {
+  const handleDeleteFoodExpense = async (expenseId) => {
     const confirmDelete = window.confirm(
       "האם אתה בטוח שברצונך למחוק את ההזמנה?"
     );
@@ -263,7 +308,6 @@ const AddFoodExpenses = ({ groupId, tableId, isManagerMode }) => {
       await deleteDoc(
         doc(db, `groups/${groupId}/tables/${tableId}/foodExpenses`, expenseId)
       );
-      setFoodExpenses((prev) => prev.filter((e) => e.id !== expenseId));
       console.log("ההזמנה נמחקה בהצלחה");
     } catch (err) {
       console.error("שגיאה במחיקת ההזמנה:", err);
@@ -276,35 +320,11 @@ const AddFoodExpenses = ({ groupId, tableId, isManagerMode }) => {
       const removedOrder = prevSubOrders[index]; // Get the removed player's order
       const newSubOrders = prevSubOrders.filter((_, i) => i !== index); // Remove the order
 
+      // Update splitters state
       setSplitters((prevSplitters) => {
         const updatedSplitters = prevSplitters.filter(
           (splitter) => splitter.playerId !== removedOrder.playerId
         );
-
-        // Calculate the sum of amounts of non-splitters
-        const nonSplittersTotal = newSubOrders
-          .filter((order) => !order.split)
-          .reduce((sum, order) => sum + order.amount, 0);
-
-        const remainingSplitAmount = totalAmount - nonSplittersTotal;
-        const newSplitterAmount =
-          updatedSplitters.length > 0
-            ? Math.round(
-                (remainingSplitAmount / updatedSplitters.length) * 100
-              ) / 100
-            : 0;
-
-        const updatedSubOrders = newSubOrders.map((subOrder) =>
-          subOrder.split
-            ? {
-                ...subOrder,
-                amount: newSplitterAmount,
-              }
-            : subOrder
-        );
-
-        setSubOrders(updatedSubOrders); // Re-set with correct precision
-
         return updatedSplitters;
       });
 
@@ -314,6 +334,11 @@ const AddFoodExpenses = ({ groupId, tableId, isManagerMode }) => {
 
   return (
     <>
+      <div>
+        {JSON.stringify(players)}
+        {JSON.stringify(groupId)}
+        {JSON.stringify(tableId)}
+      </div>
       {showSuccessPopup && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
           <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2">
@@ -421,11 +446,7 @@ const AddFoodExpenses = ({ groupId, tableId, isManagerMode }) => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleDeleteFoodExpense(
-                          expense.id,
-                          tableId,
-                          setFoodExpenses
-                        );
+                        handleDeleteFoodExpense(expense.id);
                       }}
                       className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md text-sm"
                     >
@@ -637,19 +658,67 @@ const AddFoodExpenses = ({ groupId, tableId, isManagerMode }) => {
                 יתרה נותרה: {remainingAmount}
               </h1>
             )}
+
+            {/* Error Message */}
+            {finishOrderError && (
+              <div className="mb-4 p-3 bg-red-600 text-white rounded-lg flex items-center space-x-2">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                <span>{finishOrderError}</span>
+              </div>
+            )}
+
             <div className="relative group">
               <button
                 onClick={handleFinishOrder}
-                disabled={remainingAmount !== 0}
-                className={`w-full py-2 rounded-lg transition ${
-                  remainingAmount === 0
+                disabled={remainingAmount !== 0 || isFinishingOrder}
+                className={`w-full py-2 rounded-lg transition flex items-center justify-center gap-2 ${
+                  remainingAmount === 0 && !isFinishingOrder
                     ? "bg-blue-600 hover:bg-blue-700 text-white"
                     : "bg-gray-500 text-gray-300 cursor-not-allowed"
                 }`}
               >
-                סיים הזמנה
+                {isFinishingOrder ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    מוסיף הזמנה...
+                  </>
+                ) : (
+                  "סיים הזמנה"
+                )}
               </button>
-              {remainingAmount !== 0 && (
+              {remainingAmount !== 0 && !isFinishingOrder && (
                 <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-max text-xs text-white bg-gray-700 px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
                   היתרה חייבת להיות 0 על מנת לסיים את ההזמנה
                 </span>
