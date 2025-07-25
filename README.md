@@ -27,13 +27,21 @@ npm install
 
 ### Development Server
 
-To run the project in development mode:
+To run the project in development mode with Netlify functions:
+
+```sh
+netlify dev
+```
+
+This starts the development server with Netlify functions support. The server will be available at [http://localhost:8888](http://localhost:8888).
+
+Alternatively, you can run without Netlify functions:
 
 ```sh
 npm run start
 ```
 
-This starts the development server. Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+This starts the basic development server. Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
 
 ---
 

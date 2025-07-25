@@ -32,6 +32,7 @@ import DropdownWithSearch from "../components/DropdownWithSearch";
 import AddFoodExpenses from "../components/AddFoodExpenses";
 import AddPlayerDropdown from "../components/AddPlayerDropdown";
 import AddPlayerModal from "../components/AddPlayerModal";
+import WideDisplayNew from "./WideDisplayNew";
 
 const Table = ({ isManagerMode, soundEnabled }) => {
   const { groupId, tableId } = useParams();
@@ -50,6 +51,8 @@ const Table = ({ isManagerMode, soundEnabled }) => {
   const [playerToSumUp, setPlayerToSumUp] = useState(null);
   const [playerToAdd, setPlayerToAdd] = useState();
   const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
+
+  const [isShowingWideDisplay, setIsShowingWideDisplay] = useState(false);
 
   const UPDATE_DURATION = 4 * 60 * 1000; // 4 minutes in milliseconds
 
