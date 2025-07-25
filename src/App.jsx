@@ -9,6 +9,7 @@ import {
   Routes,
   Route,
   Navigate,
+  useLocation,
 } from "react-router-dom";
 import { useState } from "react";
 import Sumup from "./pages/Sumup";
@@ -24,90 +25,96 @@ import WideDisplayNewPage from "./pages/WideDisplayNew";
 function App() {
   const [isManagerMode, setIsManagerMode] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
+
   return (
     <div className="App min-h-screen flex flex-col">
       <Router>
+        <AppContent
+          isManagerMode={isManagerMode}
+          setIsManagerMode={setIsManagerMode}
+          soundEnabled={soundEnabled}
+          setSoundEnabled={setSoundEnabled}
+        />
+      </Router>
+    </div>
+  );
+}
+
+const AppContent = ({
+  isManagerMode,
+  setIsManagerMode,
+  soundEnabled,
+  setSoundEnabled,
+}) => {
+  const location = useLocation();
+  const isWideDisplay = location.pathname === "/wide-display";
+
+  return (
+    <>
+      {!isWideDisplay && (
         <Header
           isManagerMode={isManagerMode}
           setIsManagerMode={setIsManagerMode}
           soundEnabled={soundEnabled}
           setSoundEnabled={setSoundEnabled}
         />
+      )}
 
-        {/* Version indicator - moved to top right */}
+      {/* Version indicator - moved to top right */}
+      {!isWideDisplay && (
         <div className="absolute top-20 right-4 z-10 bg-red-100 px-2 py-1 rounded text-xs text-red-700">
           v2.2.0
         </div>
+      )}
 
-        {/* Main content area - takes up all available space */}
-        <main className="flex-1">
-          <Routes>
-            <Route
-              path="/groups"
-              element={<GroupsManager isManagerMode={isManagerMode} />}
-            />
-            <Route
-              path="/group/:groupId"
-              element={<Group isManagerMode={isManagerMode} />}
-            />
-            {/* <Route
-              path="/group/:groupId/tables"
-              element={<TablesManager isManagerMode={isManagerMode} />}
-            /> */}
-            {/* <Route
-              path="group/:groupId/table/:tableId"
-              element={
-                <Table
-                  isManagerMode={isManagerMode}
-                  soundEnabled={soundEnabled}
-                />
-              }
-            /> */}
-            <Route
-              path="/group/:groupId/table/:tableId"
-              element={
-                <Table
-                  isManagerMode={isManagerMode}
-                  soundEnabled={soundEnabled}
-                />
-              }
-            />
-            <Route
-              // path="/sumup/:tableId"
-              path="/sumup/group/:groupId/table/:tableId"
-              element={<Sumup isManagerMode={isManagerMode} />}
-            />
-            <Route
-              // path="/leftovers/:tableId"
-              path="/leftovers/group/:groupId/table/:tableId"
-              element={<Leftovers isManagerMode={isManagerMode} />}
-            />
-            <Route
-              path="/split/group/:groupId/table/:tableId"
-              element={<Split isManagerMode={isManagerMode} />}
-            />
-            <Route
-              path="/unions"
-              element={<UnionsManager isManagerMode={isManagerMode} />}
-            />
-            <Route
-              path="/union/:unionId"
-              element={<Union isManagerMode={isManagerMode} />}
-            />
-            <Route
-              path="/union/:unionId"
-              element={<Union isManagerMode={isManagerMode} />}
-            />
-            <Route path="/wide-display" element={<WideDisplayNewPage />} />
+      {/* Main content area - takes up all available space */}
+      <main className="flex-1">
+        <Routes>
+          <Route
+            path="/groups"
+            element={<GroupsManager isManagerMode={isManagerMode} />}
+          />
+          <Route
+            path="/group/:groupId"
+            element={<Group isManagerMode={isManagerMode} />}
+          />
+          <Route
+            path="/group/:groupId/table/:tableId"
+            element={
+              <Table
+                isManagerMode={isManagerMode}
+                soundEnabled={soundEnabled}
+              />
+            }
+          />
+          <Route
+            path="/sumup/group/:groupId/table/:tableId"
+            element={<Sumup isManagerMode={isManagerMode} />}
+          />
+          <Route
+            path="/leftovers/group/:groupId/table/:tableId"
+            element={<Leftovers isManagerMode={isManagerMode} />}
+          />
+          <Route
+            path="/split/group/:groupId/table/:tableId"
+            element={<Split isManagerMode={isManagerMode} />}
+          />
+          <Route
+            path="/unions"
+            element={<UnionsManager isManagerMode={isManagerMode} />}
+          />
+          <Route
+            path="/union/:unionId"
+            element={<Union isManagerMode={isManagerMode} />}
+          />
+          <Route path="/wide-display" element={<WideDisplayNewPage />} />
+          <Route path="*" element={<Navigate to="/groups" replace />} />
+        </Routes>
+      </main>
 
-            <Route path="*" element={<Navigate to="/groups" replace />} />
-          </Routes>
-        </main>
-
-        <Footer />
-      </Router>
-    </div>
+      {!isWideDisplay && <Footer />}
+    </>
   );
-}
+};
 
 export default App;

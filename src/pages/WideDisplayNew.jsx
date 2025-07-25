@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 import tableHoriz from "../assets/images/tableHoriz.png";
 import matzriAvatar from "../assets/avatars/matzri.png";
 import koreAvatar from "../assets/avatars/koren.png";
 import blecherAvatar from "../assets/avatars/blecher.png";
+import alexisWhite from "../assets/icons/alexiswhite.svg";
 
 const getPlayerPositions = (numPlayers) => {
   // Positions are shown from 12 oclock in the clock direction.
@@ -124,6 +125,8 @@ const getPlayerPositions = (numPlayers) => {
 };
 
 const WideDisplayNewPage = () => {
+  const [isFullScreen, setIsFullScreen] = useState(false);
+
   // Example players array - replace with your actual data
   const players = [
     { id: 1, name: "player 1" },
@@ -135,16 +138,79 @@ const WideDisplayNewPage = () => {
     { id: 7, name: "Player 7" },
     { id: 8, name: "Player 8" },
     { id: 9, name: "Player 9" },
-    { id: 10, name: "Player 10" },
-    { id: 11, name: "Player 11" },
-    { id: 12, name: "Player 12" },
+    // { id: 10, name: "Player 10" },
+    // { id: 11, name: "Player 11" },
+    // { id: 12, name: "Player 12" },
     // ... add more players as needed
   ];
 
   const positions = getPlayerPositions(players.length);
 
+  const handleFullScreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      setIsFullScreen(true);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+        setIsFullScreen(false);
+      }
+    }
+  };
+
+  React.useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullScreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+
+    document.body.style.overflow = "hidden";
+    document.body.style.height = "100vh";
+    document.documentElement.style.height = "100vh";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.body.style.overflow = "";
+      document.body.style.height = "";
+      document.documentElement.style.height = "";
+      document.documentElement.style.overflow = "";
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="fixed inset-0 h-[100vh] w-screen flex items-center justify-center bg-black overflow-hidden">
+      {/* Full Screen Button */}
+      <button
+        onClick={handleFullScreen}
+        className="absolute top-4 right-4 px-4 py-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-bold rounded-lg shadow-lg hover:from-yellow-500 hover:to-yellow-700 transition-all z-50 flex items-center gap-2"
+      >
+        <span>{isFullScreen ? "Exit Full Screen" : "Show Full Display"}</span>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke="currentColor"
+          className="w-6 h-6"
+        >
+          {isFullScreen ? (
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M9 9V4.5M9 9H4.5M9 9 3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5 5.25 5.25"
+            />
+          ) : (
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
+            />
+          )}
+        </svg>
+      </button>
+
       <div className="w-[70vw] h-[60vh] relative">
         {/* Table Image in the center */}
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full h-full flex items-center justify-center">
@@ -198,23 +264,35 @@ const WideDisplayNewPage = () => {
                 </div>
                 <img
                   src={
-                    "https://res.cloudinary.com/dmvedaa06/image/upload/v1753293773/kejtl1qhyqsbreqymohp.png"
+                    "https://res.cloudinary.com/dmvedaa06/image/upload/v1753294581/cgxvfntb7ly38tzonfqh.png"
                   }
                   alt={player.name}
                   className="w-28 h-28 object-contain"
                 />
-                <div className="mt-2 px-3 py-1 bg-white/90 rounded-lg shadow-lg backdrop-blur-sm">
+                <div className="mt-2">
                   <span
-                    className="text-lg font-heebo font-bold text-slate-800"
-                    style={{ fontFamily: "Rubik, sans-serif" }}
+                    className="text-lg font-heebo font-bold text-black"
+                    style={{
+                      fontFamily: "Rubik, sans-serif",
+                      textShadow:
+                        "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff",
+                    }}
                   >
-                    שגיא בלכר
+                    עומר בכר{" "}
                   </span>
                 </div>
               </div>
             );
           })}
         </div>
+      </div>
+      {/* Alexis White Logo */}
+      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+        <img
+          src={alexisWhite}
+          alt="Alexis"
+          className="h-8 opacity-50 hover:opacity-100 transition-opacity"
+        />
       </div>
     </div>
   );
