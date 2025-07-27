@@ -28,6 +28,7 @@ const CreateATable = ({ groupId }) => {
     const playerExists = players.some(
       (existingPlayer) => existingPlayer.id === player.id
     );
+    console.log("sagy12 player select", player);
 
     // Only add the player if they don't already exist in the list
     if (!playerExists) {
@@ -140,7 +141,13 @@ const CreateATable = ({ groupId }) => {
       const playersCollectionRef = collection(tableDocRef, "players");
       for (const player of players) {
         const playerDocRef = doc(playersCollectionRef, player.id);
-        await setDoc(playerDocRef, { ...player, entries: 1 });
+        console.log("player", player);
+
+        await setDoc(playerDocRef, {
+          ...player,
+          entries: 1,
+          avatarUrl: player.avatarUrl || null,
+        });
 
         await addDoc(historyCollectionRef, {
           type: "player_added",

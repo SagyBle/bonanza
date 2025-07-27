@@ -124,54 +124,33 @@ const getPlayerPositions = (numPlayers) => {
   return positions[numPlayers] || [];
 };
 
-const WideDisplayNewPage = () => {
-  const [isFullScreen, setIsFullScreen] = useState(false);
-
+const WideDisplayNewPage = ({ onClose, players }) => {
   // Example players array - replace with your actual data
-  const players = [
-    { id: 1, name: "player 1" },
-    { id: 2, name: "Player 2" },
-    { id: 3, name: "Player 3" },
-    { id: 4, name: "Player 4" },
-    { id: 5, name: "Player 5" },
-    { id: 6, name: "Player 6" },
-    { id: 7, name: "Player 7" },
-    { id: 8, name: "Player 8" },
-    { id: 9, name: "Player 9" },
-    // { id: 10, name: "Player 10" },
-    // { id: 11, name: "Player 11" },
-    // { id: 12, name: "Player 12" },
-    // ... add more players as needed
-  ];
+  // const players = [
+  //   { id: 1, name: "player 1" },
+  //   { id: 2, name: "Player 2" },
+  //   { id: 3, name: "Player 3" },
+  //   { id: 4, name: "Player 4" },
+  //   { id: 5, name: "Player 5" },
+  //   { id: 6, name: "Player 6" },
+  //   { id: 7, name: "Player 7" },
+  //   { id: 8, name: "Player 8" },
+  //   { id: 9, name: "Player 9" },
+  //   // { id: 10, name: "Player 10" },
+  //   // { id: 11, name: "Player 11" },
+  //   // { id: 12, name: "Player 12" },
+  //   // ... add more players as needed
+  // ];
 
   const positions = getPlayerPositions(players.length);
 
-  const handleFullScreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen();
-      setIsFullScreen(true);
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-        setIsFullScreen(false);
-      }
-    }
-  };
-
   React.useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullScreen(!!document.fullscreenElement);
-    };
-
-    document.addEventListener("fullscreenchange", handleFullscreenChange);
-
     document.body.style.overflow = "hidden";
     document.body.style.height = "100vh";
     document.documentElement.style.height = "100vh";
     document.documentElement.style.overflow = "hidden";
 
     return () => {
-      document.removeEventListener("fullscreenchange", handleFullscreenChange);
       document.body.style.overflow = "";
       document.body.style.height = "";
       document.documentElement.style.height = "";
@@ -179,14 +158,19 @@ const WideDisplayNewPage = () => {
     };
   }, []);
 
+  const handleClose = () => {
+    document.exitFullscreen().catch(() => {});
+    onClose();
+  };
+
   return (
-    <div className="fixed inset-0 h-[100vh] w-screen flex items-center justify-center bg-black overflow-hidden">
-      {/* Full Screen Button */}
+    <div className="fixed inset-0 z-50 bg-black">
+      {/* Close button */}
       <button
-        onClick={handleFullScreen}
-        className="absolute top-4 right-4 px-4 py-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-bold rounded-lg shadow-lg hover:from-yellow-500 hover:to-yellow-700 transition-all z-50 flex items-center gap-2"
+        onClick={handleClose}
+        className="absolute top-4 right-4 z-50 px-4 py-2 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-bold rounded-lg shadow-lg hover:from-yellow-500 hover:to-yellow-700 transition-all flex items-center gap-2"
       >
-        <span>{isFullScreen ? "Exit Full Screen" : "Show Full Display"}</span>
+        <span>Exit Full Screen</span>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
@@ -195,104 +179,121 @@ const WideDisplayNewPage = () => {
           stroke="currentColor"
           className="w-6 h-6"
         >
-          {isFullScreen ? (
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M9 9V4.5M9 9H4.5M9 9 3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5 5.25 5.25"
-            />
-          ) : (
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"
-            />
-          )}
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M9 9V4.5M9 9H4.5M9 9 3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5 5.25 5.25"
+          />
         </svg>
       </button>
 
-      <div className="w-[70vw] h-[60vh] relative">
-        {/* Table Image in the center */}
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full h-full flex items-center justify-center">
-          <img
-            src={tableHoriz}
-            alt="Table"
-            className="w-full h-full object-contain"
-          />
+      <div className="w-screen h-screen flex items-center justify-center">
+        <div className="w-[70vw] h-[60vh] relative">
+          {/* Table Image in the center */}
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full h-full flex items-center justify-center">
+            <img
+              src={tableHoriz}
+              alt="Table"
+              className="w-full h-full object-contain"
+            />
 
-          {/* Players */}
-          {players.map((player, index) => {
-            const position = positions[index];
-            return (
-              <div
-                key={player.id}
-                className="absolute w-28 h-28 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center"
-                style={{
-                  top: `calc(50% + ${position.top}%)`,
-                  left: `calc(50% + ${position.left}%)`,
-                }}
-              >
-                {/* Calculate number position based on player position */}
+            {/* Players */}
+            {players.map((player, index) => {
+              const position = positions[index];
+              return (
                 <div
-                  className={`absolute ${
-                    // Top players (position.top < -20)
-                    position.top < -20
-                      ? "-top-12 left-1/2 -translate-x-1/2"
-                      : // Bottom players (position.top > 20)
-                      position.top > 20
-                      ? "top-full left-1/2 -translate-x-1/2 mt-8"
-                      : // Left side players (position.left < -20)
-                      position.left < -20
-                      ? "top-1/2 -left-12 -translate-y-1/2"
-                      : // Right side players (position.left > 20)
-                        "top-1/2 left-full translate-x-2 -translate-y-1/2"
-                  }`}
+                  key={player.id}
+                  className="absolute w-28 h-28 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center"
+                  style={{
+                    top: `calc(50% + ${position.top}%)`,
+                    left: `calc(50% + ${position.left}%)`,
+                  }}
                 >
-                  <div className="relative w-10 h-10">
-                    {/* Outer ring */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 rounded-full shadow-xl border-2 border-yellow-300"></div>
-                    {/* Inner circle */}
-                    <div className="absolute inset-0.5 bg-gradient-to-br from-red-600 to-red-800 rounded-full flex items-center justify-center">
-                      <span
-                        className="text-2xl font-bold text-yellow-300 font-casino"
-                        style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.5)" }}
-                      >
-                        4
-                      </span>
+                  {/* Calculate number position based on player position */}
+                  <div
+                    className={`absolute ${
+                      // Top players (position.top < -20)
+                      position.top < -20
+                        ? "-top-12 left-1/2 -translate-x-1/2"
+                        : // Bottom players (position.top > 20)
+                        position.top > 20
+                        ? "top-full left-1/2 -translate-x-1/2 mt-8"
+                        : // Left side players (position.left < -20)
+                        position.left < -20
+                        ? "top-1/2 -left-12 -translate-y-1/2"
+                        : // Right side players (position.left > 20)
+                          "top-1/2 left-full translate-x-2 -translate-y-1/2"
+                    }`}
+                  >
+                    <div className="relative w-10 h-10">
+                      {/* Outer ring */}
+                      <div className="absolute inset-0 bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 rounded-full shadow-xl border-2 border-yellow-300"></div>
+                      {/* Inner circle */}
+                      <div className="absolute inset-0.5 bg-gradient-to-br from-red-600 to-red-800 rounded-full flex items-center justify-center">
+                        <span
+                          className="text-2xl font-bold text-yellow-300 font-casino"
+                          style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.5)" }}
+                        >
+                          {player.entries}
+                        </span>
+                      </div>
                     </div>
                   </div>
+                  <div className="relative group">
+                    <img
+                      src={player.avatarUrl}
+                      alt={player.name}
+                      className="w-28 h-28 object-contain rounded-full"
+                    />
+                    {/* Plus icon overlay on hover */}
+                    <div
+                      className="absolute top-0 left-0 w-28 h-28 rounded-full bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                      onClick={() => {
+                        console.log("Player doc:", player);
+                        console.log("Adding entry for player:", player.name);
+                      }}
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={2}
+                        stroke="currentColor"
+                        className="w-12 h-12 text-white"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M12 4.5v15m7.5-7.5h-15"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <span
+                      className="text-lg font-heebo font-bold text-black"
+                      style={{
+                        fontFamily: "Rubik, sans-serif",
+                        textShadow:
+                          "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff",
+                      }}
+                    >
+                      {player.name}
+                    </span>
+                  </div>
                 </div>
-                <img
-                  src={
-                    "https://res.cloudinary.com/dmvedaa06/image/upload/v1753294581/cgxvfntb7ly38tzonfqh.png"
-                  }
-                  alt={player.name}
-                  className="w-28 h-28 object-contain"
-                />
-                <div className="mt-2">
-                  <span
-                    className="text-lg font-heebo font-bold text-black"
-                    style={{
-                      fontFamily: "Rubik, sans-serif",
-                      textShadow:
-                        "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff",
-                    }}
-                  >
-                    עומר בכר{" "}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
-      </div>
-      {/* Alexis White Logo */}
-      <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
-        <img
-          src={alexisWhite}
-          alt="Alexis"
-          className="h-8 opacity-50 hover:opacity-100 transition-opacity"
-        />
+        {/* Alexis White Logo */}
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+          <img
+            src={alexisWhite}
+            alt="Alexis"
+            className="h-8 opacity-50 hover:opacity-100 transition-opacity"
+          />
+        </div>
       </div>
     </div>
   );
