@@ -32,7 +32,7 @@ import DropdownWithSearch from "../components/DropdownWithSearch";
 import AddFoodExpenses from "../components/AddFoodExpenses";
 import AddPlayerDropdown from "../components/AddPlayerDropdown";
 import AddPlayerModal from "../components/AddPlayerModal";
-import WideDisplayNew from "./WideDisplayNew";
+import WideDisplayNew from "../components/wideDisplay/WideDisplayNew";
 
 const Table = ({ isManagerMode, soundEnabled }) => {
   const { groupId, tableId } = useParams();
@@ -236,40 +236,6 @@ const Table = ({ isManagerMode, soundEnabled }) => {
     }
   };
 
-  // need to change this part
-  // const handleAddPlayer = async () => {
-  //   if (newPlayerName.trim() === "") {
-  //     alert("Please enter a player name");
-  //     return;
-  //   }
-
-  //   try {
-  //     const newPlayer = {
-  //       name: newPlayerName,
-  //       entries: 1,
-  //       timestamp: new Date().toISOString(),
-  //     };
-
-  //     // Add the new player to the Firestore table's players collection
-  //     const playersRef = collection(db, `groups/${groupId}/tables/${tableId}/players`);
-  //     const playerDocRef = await addDoc(playersRef, newPlayer);
-
-  //     // Add a history entry for the new player
-  //     const historyRef = collection(db, `groups/${groupId}/tables/${tableId}/history`);
-  //     await addDoc(historyRef, {
-  //       type: "player_added",
-  //       playerName: newPlayerName,
-  //       playerId: playerDocRef.id,
-  //       timestamp: new Date().toISOString(),
-  //     });
-
-  //     // Clear the input field
-  //     setNewPlayerName("");
-  //   } catch (error) {
-  //     console.error("Error adding player: ", error);
-  //   }
-  // };
-
   const handleRemovePlayer = async (playerId) => {
     try {
       // Prompt confirmation before deleting the player
@@ -407,6 +373,8 @@ const Table = ({ isManagerMode, soundEnabled }) => {
           <WideDisplayNew
             onClose={() => setShowWideDisplay(false)}
             players={players}
+            groupId={groupId}
+            tableId={tableId}
           />
         </div>
       )}
@@ -569,6 +537,7 @@ const Table = ({ isManagerMode, soundEnabled }) => {
         <SumupPlayerModal
           player={playerToSumUp}
           tableId={tableId}
+          groupId={groupId}
           onClose={onCloseSumupPlayerModal}
         />
       )}

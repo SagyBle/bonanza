@@ -1,9 +1,19 @@
-import React, { useState } from "react";
-import tableHoriz from "../assets/images/tableHoriz.png";
-import matzriAvatar from "../assets/avatars/matzri.png";
-import koreAvatar from "../assets/avatars/koren.png";
-import blecherAvatar from "../assets/avatars/blecher.png";
-import alexisWhite from "../assets/icons/alexiswhite.svg";
+import React, { useState, useRef, useEffect } from "react";
+import tableHoriz from "../../assets/images/tableHoriz.png";
+import alexisWhite from "../../assets/icons/alexiswhite.svg";
+import WideAsmachta from "./WideAsmachta";
+import {
+  doc,
+  updateDoc,
+  increment,
+  getDoc,
+  addDoc,
+  collection,
+} from "firebase/firestore";
+import { db } from "../../config/firebase";
+import cachingSound from "../../assets/sounds/caching.mp3";
+import sheepSound from "../../assets/sounds/sheep.mp3";
+import policeSound from "../../assets/sounds/police.mp3";
 
 const getPlayerPositions = (numPlayers) => {
   // Positions are shown from 12 oclock in the clock direction.
@@ -124,7 +134,50 @@ const getPlayerPositions = (numPlayers) => {
   return positions[numPlayers] || [];
 };
 
-const WideDisplayNewPage = ({ onClose, players }) => {
+const WideDisplayNewPage = ({ onClose, players, groupId, tableId }) => {
+  const [selectedPlayer, setSelectedPlayer] = useState(null);
+  const [showAsmachta, setShowAsmachta] = useState(false);
+  const prevEntriesRef = useRef({});
+  const [clickedPlayerId, setClickedPlayerId] = useState(null);
+
+  const cachingAudio = new Audio(cachingSound);
+  const sheepAudio = new Audio(sheepSound);
+  const policeAudio = new Audio(policeSound);
+
+  useEffect(() => {
+    players.forEach((player) => {
+      const prevEntry = prevEntriesRef.current[player.id];
+
+      if (prevEntry !== undefined && player.entries !== prevEntry) {
+        // Entry changed for this player
+        console.log("Entry changed for player:", player.name);
+        setSelectedPlayer(player);
+        setShowAsmachta(true);
+
+        // Play sound based on the number of entries
+        const entries = player.entries;
+        let soundToPlay = null;
+
+        if (entries < 4) {
+          soundToPlay = cachingAudio;
+        } else if (entries === 4) {
+          soundToPlay = sheepAudio;
+        } else if (entries > 4) {
+          soundToPlay = policeAudio;
+        }
+
+        if (soundToPlay) {
+          soundToPlay.play().catch((e) => {
+            console.warn("Autoplay blocked or failed:", e);
+          });
+        }
+      }
+
+      // Update reference for next comparison
+      prevEntriesRef.current[player.id] = player.entries;
+    });
+  }, [players]);
+
   // Example players array - replace with your actual data
   // const players = [
   //   { id: 1, name: "player 1" },
@@ -141,6 +194,48 @@ const WideDisplayNewPage = ({ onClose, players }) => {
   //   // { id: 12, name: "Player 12" },
   //   // ... add more players as needed
   // ];
+
+  const handleAddEntry = async (player) => {
+    try {
+      setClickedPlayerId(player.id);
+      setTimeout(() => setClickedPlayerId(null), 300); // Remove animation class after 300ms
+
+      const playerDocRef = doc(
+        db,
+        `groups/${groupId}/tables/${tableId}/players`,
+        player.id
+      );
+      const playerSnapshot = await getDoc(playerDocRef);
+      const playerData = playerSnapshot.data();
+
+      // Update the entries field
+      await updateDoc(playerDocRef, {
+        timestamp: new Date().toISOString(),
+        entries: increment(1),
+      });
+
+      // Add history record
+      const historyCollectionRef = collection(
+        db,
+        `groups/${groupId}/tables/${tableId}/history`
+      );
+      await addDoc(historyCollectionRef, {
+        playerId: player.id,
+        playerName: player.name,
+        timestamp: new Date().toISOString(),
+        type: "entry_increased",
+        updatedEntries: playerData.entries + 1,
+      });
+    } catch (error) {
+      console.error("Error adding entry:", error);
+      setClickedPlayerId(null); // Clear animation if there's an error
+    }
+  };
+
+  const handleCloseAsmachta = () => {
+    setShowAsmachta(false);
+    setSelectedPlayer(null);
+  };
 
   const positions = getPlayerPositions(players.length);
 
@@ -165,6 +260,10 @@ const WideDisplayNewPage = ({ onClose, players }) => {
 
   return (
     <div className="fixed inset-0 z-50 bg-black">
+      {showAsmachta && selectedPlayer && (
+        <WideAsmachta player={selectedPlayer} onClose={handleCloseAsmachta} />
+      )}
+
       {/* Close button */}
       <button
         onClick={handleClose}
@@ -227,12 +326,29 @@ const WideDisplayNewPage = ({ onClose, players }) => {
                   >
                     <div className="relative w-10 h-10">
                       {/* Outer ring */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 rounded-full shadow-xl border-2 border-yellow-300"></div>
+                      <div
+                        className={`absolute inset-0 bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 rounded-full shadow-xl border-2 border-yellow-300 ${
+                          player.finalTotalChips || player.finalTotalChips === 0
+                            ? "opacity-20"
+                            : ""
+                        }`}
+                      ></div>
                       {/* Inner circle */}
-                      <div className="absolute inset-0.5 bg-gradient-to-br from-red-600 to-red-800 rounded-full flex items-center justify-center">
+                      <div
+                        className={`absolute inset-0.5 bg-gradient-to-br from-red-600 to-red-800 rounded-full flex items-center justify-center ${
+                          player.finalTotalChips || player.finalTotalChips === 0
+                            ? "opacity-20"
+                            : ""
+                        }`}
+                      >
                         <span
-                          className="text-2xl font-bold text-yellow-300 font-casino"
-                          style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.5)" }}
+                          className={`text-2xl font-bold text-yellow-300 font-casino ${
+                            player.finalTotalChips ||
+                            player.finalTotalChips === 0
+                              ? "opacity-80"
+                              : ""
+                          }`}
+                          // style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.7)" }}
                         >
                           {player.entries}
                         </span>
@@ -243,35 +359,66 @@ const WideDisplayNewPage = ({ onClose, players }) => {
                     <img
                       src={player.avatarUrl}
                       alt={player.name}
-                      className="w-28 h-28 object-contain rounded-full"
+                      className={`w-28 h-28 object-contain rounded-full transition-transform duration-300 ${
+                        player.finalTotalChips || player.finalTotalChips === 0
+                          ? "opacity-20"
+                          : ""
+                      } ${
+                        clickedPlayerId === player.id
+                          ? "scale-110 animate-pulse"
+                          : ""
+                      }`}
                     />
-                    {/* Plus icon overlay on hover */}
-                    <div
-                      className="absolute top-0 left-0 w-28 h-28 rounded-full bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                      onClick={() => {
-                        console.log("Player doc:", player);
-                        console.log("Adding entry for player:", player.name);
-                      }}
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        strokeWidth={2}
-                        stroke="currentColor"
-                        className="w-12 h-12 text-white"
+                    {/* Plus icon overlay on hover - only show if player hasn't left */}
+                    {!(
+                      player.finalTotalChips || player.finalTotalChips === 0
+                    ) && (
+                      <div
+                        className={`absolute top-0 left-0 w-28 h-28 rounded-full bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer`}
+                        onClick={() => handleAddEntry(player)}
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          d="M12 4.5v15m7.5-7.5h-15"
-                        />
-                      </svg>
-                    </div>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          strokeWidth={2}
+                          stroke="currentColor"
+                          className="w-12 h-12 text-white"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M12 4.5v15m7.5-7.5h-15"
+                          />
+                        </svg>
+                      </div>
+                    )}
+                    {/* Show final chips for players who have left */}
+                    {(player.finalTotalChips ||
+                      player.finalTotalChips === 0) && (
+                      <div className="absolute top-[85%] left-0 right-0 flex justify-center">
+                        <span
+                          className={`text-xl font-bold px-3 py-1 rounded-full ${
+                            player.finalTotalChips > 0
+                              ? "bg-green-900 bg-opacity-50 text-green-400"
+                              : player.finalTotalChips < 0
+                              ? "bg-red-900 bg-opacity-50 text-red-400"
+                              : "bg-gray-900 bg-opacity-50 text-gray-400"
+                          }`}
+                        >
+                          {player.finalTotalChips > 0 ? "+" : ""}
+                          {player.finalTotalChips}
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="mt-2">
                     <span
-                      className="text-lg font-heebo font-bold text-black"
+                      className={`text-lg font-heebo font-bold text-black ${
+                        player.finalTotalChips || player.finalTotalChips === 0
+                          ? "opacity-20"
+                          : ""
+                      }`}
                       style={{
                         fontFamily: "Rubik, sans-serif",
                         textShadow:
