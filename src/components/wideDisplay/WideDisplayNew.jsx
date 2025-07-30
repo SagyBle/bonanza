@@ -304,7 +304,7 @@ const WideDisplayNewPage = ({ onClose, players, groupId, tableId }) => {
                 return (
                   <div
                     key={player.id}
-                    className="absolute w-28 h-28 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center"
+                    className="absolute w-20 h-20 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center"
                     style={{
                       top: `calc(50% + ${position.top}%)`,
                       left: `calc(50% + ${position.left}%)`,
@@ -326,7 +326,7 @@ const WideDisplayNewPage = ({ onClose, players, groupId, tableId }) => {
                             "top-1/2 left-full translate-x-2 -translate-y-1/2"
                       }`}
                     >
-                      <div className="relative w-10 h-10">
+                      <div className="relative w-8 h-8">
                         {/* Outer ring */}
                         <div
                           className={`absolute inset-0 bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 rounded-full shadow-xl border-2 border-yellow-300 ${
@@ -363,7 +363,7 @@ const WideDisplayNewPage = ({ onClose, players, groupId, tableId }) => {
                       <img
                         src={player.avatarUrl}
                         alt={player.name}
-                        className={`w-28 h-28 object-contain rounded-full transition-transform duration-300 ${
+                        className={`w-20 h-20 object-contain rounded-full transition-transform duration-300 ${
                           player.finalTotalChips || player.finalTotalChips === 0
                             ? "opacity-20"
                             : ""
@@ -378,7 +378,7 @@ const WideDisplayNewPage = ({ onClose, players, groupId, tableId }) => {
                         player.finalTotalChips || player.finalTotalChips === 0
                       ) && (
                         <div
-                          className={`absolute top-0 left-0 w-28 h-28 rounded-full bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer`}
+                          className={`absolute top-0 left-0 w-20 h-20 rounded-full bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer`}
                           onClick={() => handleAddEntry(player)}
                         >
                           <svg
