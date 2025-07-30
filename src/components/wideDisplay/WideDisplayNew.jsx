@@ -297,140 +297,144 @@ const WideDisplayNewPage = ({ onClose, players, groupId, tableId }) => {
             />
 
             {/* Players */}
-            {players.map((player, index) => {
-              const position = positions[index];
-              return (
-                <div
-                  key={player.id}
-                  className="absolute w-28 h-28 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center"
-                  style={{
-                    top: `calc(50% + ${position.top}%)`,
-                    left: `calc(50% + ${position.left}%)`,
-                  }}
-                >
-                  {/* Calculate number position based on player position */}
+            {players
+              ?.sort((a, b) => a.order - b.order)
+              ?.map((player, index) => {
+                const position = positions[index];
+                return (
                   <div
-                    className={`absolute ${
-                      // Top players (position.top < -20)
-                      position.top < -20
-                        ? "-top-12 left-1/2 -translate-x-1/2"
-                        : // Bottom players (position.top > 20)
-                        position.top > 20
-                        ? "top-full left-1/2 -translate-x-1/2 mt-8"
-                        : // Left side players (position.left < -20)
-                        position.left < -20
-                        ? "top-1/2 -left-12 -translate-y-1/2"
-                        : // Right side players (position.left > 20)
-                          "top-1/2 left-full translate-x-2 -translate-y-1/2"
-                    }`}
+                    key={player.id}
+                    className="absolute w-28 h-28 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center"
+                    style={{
+                      top: `calc(50% + ${position.top}%)`,
+                      left: `calc(50% + ${position.left}%)`,
+                    }}
                   >
-                    <div className="relative w-10 h-10">
-                      {/* Outer ring */}
-                      <div
-                        className={`absolute inset-0 bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 rounded-full shadow-xl border-2 border-yellow-300 ${
-                          player.finalTotalChips || player.finalTotalChips === 0
-                            ? "opacity-20"
-                            : ""
-                        }`}
-                      ></div>
-                      {/* Inner circle */}
-                      <div
-                        className={`absolute inset-0.5 bg-gradient-to-br from-red-600 to-red-800 rounded-full flex items-center justify-center ${
-                          player.finalTotalChips || player.finalTotalChips === 0
-                            ? "opacity-20"
-                            : ""
-                        }`}
-                      >
-                        <span
-                          className={`text-2xl font-bold text-yellow-300 font-casino ${
+                    {/* Calculate number position based on player position */}
+                    <div
+                      className={`absolute ${
+                        // Top players (position.top < -20)
+                        position.top < -20
+                          ? "-top-12 left-1/2 -translate-x-1/2"
+                          : // Bottom players (position.top > 20)
+                          position.top > 20
+                          ? "top-full left-1/2 -translate-x-1/2 mt-8"
+                          : // Left side players (position.left < -20)
+                          position.left < -20
+                          ? "top-1/2 -left-12 -translate-y-1/2"
+                          : // Right side players (position.left > 20)
+                            "top-1/2 left-full translate-x-2 -translate-y-1/2"
+                      }`}
+                    >
+                      <div className="relative w-10 h-10">
+                        {/* Outer ring */}
+                        <div
+                          className={`absolute inset-0 bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 rounded-full shadow-xl border-2 border-yellow-300 ${
                             player.finalTotalChips ||
                             player.finalTotalChips === 0
-                              ? "opacity-80"
+                              ? "opacity-20"
                               : ""
                           }`}
-                          // style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.7)" }}
-                        >
-                          {player.entries}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="relative group">
-                    <img
-                      src={player.avatarUrl}
-                      alt={player.name}
-                      className={`w-28 h-28 object-contain rounded-full transition-transform duration-300 ${
-                        player.finalTotalChips || player.finalTotalChips === 0
-                          ? "opacity-20"
-                          : ""
-                      } ${
-                        clickedPlayerId === player.id
-                          ? "scale-110 animate-pulse"
-                          : ""
-                      }`}
-                    />
-                    {/* Plus icon overlay on hover - only show if player hasn't left */}
-                    {!(
-                      player.finalTotalChips || player.finalTotalChips === 0
-                    ) && (
-                      <div
-                        className={`absolute top-0 left-0 w-28 h-28 rounded-full bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer`}
-                        onClick={() => handleAddEntry(player)}
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          strokeWidth={2}
-                          stroke="currentColor"
-                          className="w-12 h-12 text-white"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            d="M12 4.5v15m7.5-7.5h-15"
-                          />
-                        </svg>
-                      </div>
-                    )}
-                    {/* Show final chips for players who have left */}
-                    {(player.finalTotalChips ||
-                      player.finalTotalChips === 0) && (
-                      <div className="absolute top-[85%] left-0 right-0 flex justify-center">
-                        <span
-                          className={`text-xl font-bold px-3 py-1 rounded-full ${
-                            player.finalTotalChips > 0
-                              ? "bg-green-900 bg-opacity-50 text-green-400"
-                              : player.finalTotalChips < 0
-                              ? "bg-red-900 bg-opacity-50 text-red-400"
-                              : "bg-gray-900 bg-opacity-50 text-gray-400"
+                        ></div>
+                        {/* Inner circle */}
+                        <div
+                          className={`absolute inset-0.5 bg-gradient-to-br from-red-600 to-red-800 rounded-full flex items-center justify-center ${
+                            player.finalTotalChips ||
+                            player.finalTotalChips === 0
+                              ? "opacity-20"
+                              : ""
                           }`}
                         >
-                          {player.finalTotalChips > 0 ? "+" : ""}
-                          {player.finalTotalChips}
-                        </span>
+                          <span
+                            className={`text-2xl font-bold text-yellow-300 font-casino ${
+                              player.finalTotalChips ||
+                              player.finalTotalChips === 0
+                                ? "opacity-80"
+                                : ""
+                            }`}
+                            // style={{ textShadow: "1px 1px 2px rgba(0,0,0,0.7)" }}
+                          >
+                            {player.entries}
+                          </span>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                  <div className="mt-2">
-                    <span
-                      className={`text-lg font-heebo font-bold text-black ${
+                    </div>
+                    <div className="relative group">
+                      <img
+                        src={player.avatarUrl}
+                        alt={player.name}
+                        className={`w-28 h-28 object-contain rounded-full transition-transform duration-300 ${
+                          player.finalTotalChips || player.finalTotalChips === 0
+                            ? "opacity-20"
+                            : ""
+                        } ${
+                          clickedPlayerId === player.id
+                            ? "scale-110 animate-pulse"
+                            : ""
+                        }`}
+                      />
+                      {/* Plus icon overlay on hover - only show if player hasn't left */}
+                      {!(
                         player.finalTotalChips || player.finalTotalChips === 0
-                          ? "opacity-20"
-                          : ""
-                      }`}
-                      style={{
-                        fontFamily: "Rubik, sans-serif",
-                        textShadow:
-                          "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff",
-                      }}
-                    >
-                      {player.name}
-                    </span>
+                      ) && (
+                        <div
+                          className={`absolute top-0 left-0 w-28 h-28 rounded-full bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer`}
+                          onClick={() => handleAddEntry(player)}
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={2}
+                            stroke="currentColor"
+                            className="w-12 h-12 text-white"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              d="M12 4.5v15m7.5-7.5h-15"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                      {/* Show final chips for players who have left */}
+                      {(player.finalTotalChips ||
+                        player.finalTotalChips === 0) && (
+                        <div className="absolute top-[85%] left-0 right-0 flex justify-center">
+                          <span
+                            className={`text-xl font-bold px-3 py-1 rounded-full ${
+                              player.finalTotalChips > 0
+                                ? "bg-green-900 bg-opacity-50 text-green-400"
+                                : player.finalTotalChips < 0
+                                ? "bg-red-900 bg-opacity-50 text-red-400"
+                                : "bg-gray-900 bg-opacity-50 text-gray-400"
+                            }`}
+                          >
+                            {player.finalTotalChips > 0 ? "+" : ""}
+                            {player.finalTotalChips}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-2">
+                      <span
+                        className={`text-lg font-heebo font-bold text-black ${
+                          player.finalTotalChips || player.finalTotalChips === 0
+                            ? "opacity-20"
+                            : ""
+                        }`}
+                        style={{
+                          fontFamily: "Rubik, sans-serif",
+                          textShadow:
+                            "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff",
+                        }}
+                      >
+                        {player.name}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })}
           </div>
         </div>
         {/* Alexis White Logo */}
