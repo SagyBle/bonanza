@@ -117,7 +117,11 @@ const WideAsmachta = ({ onClose, player }) => {
                 </svg>
                 <div className="w-24 h-24 rounded-full overflow-hidden relative z-10">
                   <img
-                    src={player.avatarUrl}
+                    src={
+                      player.entries >= 4 && player.sheepAvatarUrl
+                        ? player.sheepAvatarUrl
+                        : player.avatarUrl
+                    }
                     alt={player.name}
                     className="w-full h-full object-cover"
                   />
