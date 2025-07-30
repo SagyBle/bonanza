@@ -318,12 +318,12 @@ const WideDisplayNewPage = ({ onClose, players, groupId, tableId }) => {
                           ? "-top-12 left-1/2 -translate-x-1/2"
                           : // Bottom players (position.top > 20)
                           position.top > 20
-                          ? "top-1/2 left-full translate-x-2 -translate-y-1/2"
+                          ? "top-1/2 left-[96%] -translate-y-1/2"
                           : // Left side players (position.left < -20)
                           position.left < -20
                           ? "top-1/2 -left-12 -translate-y-1/2"
                           : // Right side players (position.left > 20)
-                            "top-1/2 left-full translate-x-2 -translate-y-1/2"
+                            "top-1/2 left-[96%] -translate-y-1/2"
                       }`}
                     >
                       <div className="relative w-8 h-8">
