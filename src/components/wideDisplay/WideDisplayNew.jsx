@@ -418,7 +418,7 @@ const WideDisplayNewPage = ({ onClose, players, groupId, tableId }) => {
                     </div>
                     <div className="mt-2">
                       <span
-                        className={`text-lg font-heebo font-bold text-black ${
+                        className={`text-lg font-heebo font-bold text-black whitespace-nowrap ${
                           player.finalTotalChips || player.finalTotalChips === 0
                             ? "opacity-20"
                             : ""
@@ -427,6 +427,7 @@ const WideDisplayNewPage = ({ onClose, players, groupId, tableId }) => {
                           fontFamily: "Rubik, sans-serif",
                           textShadow:
                             "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff",
+                          fontSize: "0.9rem",
                         }}
                       >
                         {player.name}
