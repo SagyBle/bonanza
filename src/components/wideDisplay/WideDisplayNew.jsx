@@ -318,7 +318,7 @@ const WideDisplayNewPage = ({ onClose, players, groupId, tableId }) => {
                           ? "-top-12 left-1/2 -translate-x-1/2"
                           : // Bottom players (position.top > 20)
                           position.top > 20
-                          ? "top-full left-1/2 -translate-x-1/2 mt-8"
+                          ? "top-1/2 left-full translate-x-2 -translate-y-1/2"
                           : // Left side players (position.left < -20)
                           position.left < -20
                           ? "top-1/2 -left-12 -translate-y-1/2"
