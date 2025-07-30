@@ -358,6 +358,7 @@ const Table = ({ isManagerMode, soundEnabled }) => {
           <WideDisplayNew
             onClose={() => setShowWideDisplay(false)}
             players={players}
+            setPlayers={setPlayers}
             groupId={groupId}
             tableId={tableId}
           />
