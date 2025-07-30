@@ -263,6 +263,7 @@ const WideDisplayNewPage = ({ onClose, players, groupId, tableId }) => {
       {showAsmachta && selectedPlayer && (
         <WideAsmachta player={selectedPlayer} onClose={handleCloseAsmachta} />
       )}
+      <div className="text-white">{JSON.stringify(players)}</div>
 
       {/* Close button */}
       <button
@@ -366,7 +367,7 @@ const WideDisplayNewPage = ({ onClose, players, groupId, tableId }) => {
                             ? player.sheepAvatarUrl
                             : player.avatarUrl
                         }
-                        alt={player.name}
+                        alt={player.name + "sss"}
                         className={`w-20 h-20 object-contain rounded-full transition-transform duration-300 ${
                           player.finalTotalChips || player.finalTotalChips === 0
                             ? "opacity-20"

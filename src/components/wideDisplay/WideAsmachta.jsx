@@ -122,7 +122,7 @@ const WideAsmachta = ({ onClose, player }) => {
                         ? player.sheepAvatarUrl
                         : player.avatarUrl
                     }
-                    alt={player.name}
+                    alt={player.name + "sss"}
                     className="w-full h-full object-cover"
                   />
                 </div>

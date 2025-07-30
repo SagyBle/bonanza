@@ -17,6 +17,7 @@ const AddPlayerDropdown = ({ groupId, onSelectPlayer, playersToReduce }) => {
         id: doc.id,
         name: doc.data().name,
         avatarUrl: doc.data().avatarUrl || null,
+        sheepAvatarUrl: doc.data().sheepAvatarUrl || null,
       }));
       setPlayersList(players);
       setFilteredPlayers(players);

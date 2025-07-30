@@ -147,6 +147,7 @@ const CreateATable = ({ groupId }) => {
           ...player,
           entries: 1,
           avatarUrl: player.avatarUrl || null,
+          sheepAvatarUrl: player.sheepAvatarUrl || null,
         });
 
         await addDoc(historyCollectionRef, {
