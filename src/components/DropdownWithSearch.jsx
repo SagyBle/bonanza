@@ -20,6 +20,7 @@ const DropdownWithSearch = ({ groupId, onSelectPlayer }) => {
       const players = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         name: doc.data().name,
+        avatarUrl: doc.data().avatarUrl || null,
       }));
       setPlayersList(players);
       setFilteredPlayers(players);

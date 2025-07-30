@@ -333,12 +333,7 @@ const AddFoodExpenses = ({ groupId, tableId, isManagerMode }) => {
   };
 
   return (
-    <>
-      <div>
-        {JSON.stringify(players)}
-        {JSON.stringify(groupId)}
-        {JSON.stringify(tableId)}
-      </div>
+    <div>
       {showSuccessPopup && (
         <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50">
           <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2">
@@ -361,150 +356,54 @@ const AddFoodExpenses = ({ groupId, tableId, isManagerMode }) => {
         </div>
       )}
 
-      <button
-        onClick={() => setIsFormVisible((prev) => !prev)}
-        className={`w-full py-2 px-4 text-white rounded-md transition text-base font-medium shadow-md flex items-center justify-center gap-2
-    ${
-      isFormVisible
-        ? "bg-red-500 hover:bg-red-600"
-        : "bg-blue-500 hover:bg-blue-600"
-    }
-  `}
-      >
-        {isFormVisible ? (
-          <>
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-            סגור הזמנת אוכל
-          </>
-        ) : (
-          <>
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            הוספת הזמנת אוכל
-          </>
-        )}
-      </button>
-      {foodExpenses.length > 0 && (
-        <div
-          className="mt-4 p-4 bg-gray-800 text-white rounded-lg shadow-lg"
-          dir="rtl"
+      <div className="mb-4">
+        <button
+          onClick={() => setIsFormVisible((prev) => !prev)}
+          className={`w-full py-2 px-4 text-white rounded-md transition text-base font-medium shadow-md flex items-center justify-center gap-2 ${
+            isFormVisible
+              ? "bg-red-500 hover:bg-red-600"
+              : "bg-blue-500 hover:bg-blue-600"
+          }`}
         >
-          <h2 className="text-xl font-bold mb-3 text-blue-300">
-            הזמנות אוכל קיימות
-          </h2>
-          <ul className="space-y-3">
-            {foodExpenses.map((expense) => (
-              <li key={expense.id} className="bg-gray-900 rounded-md shadow-md">
-                {/* Clickable Summary */}
-                <div
-                  className="p-3 cursor-pointer hover:bg-gray-800 transition rounded-md"
-                  onClick={() =>
-                    setSelectedExpense((prevSelected) =>
-                      prevSelected?.id === expense.id ? null : expense
-                    )
-                  }
-                >
-                  <p className="text-lg font-semibold text-blue-400">
-                    {expense.title}
-                  </p>
-                  <p className="text-sm text-gray-300">
-                    משלם:{" "}
-                    {players.find((p) => p.id === expense.totalPayer)?.name ||
-                      "לא ידוע"}{" "}
-                    | סכום: ₪{expense.totalAmount}
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    נוצר בתאריך:{" "}
-                    {new Date(expense.createdAt).toLocaleDateString("he-IL")}
-                  </p>
-                  {isManagerMode && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteFoodExpense(expense.id);
-                      }}
-                      className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md text-sm"
-                    >
-                      מחק
-                    </button>
-                  )}
-                </div>
-
-                {/* Show Details Below the Selected Expense */}
-                {selectedExpense?.id === expense.id && (
-                  <div className="p-6 bg-gray-800 text-white rounded-lg shadow-lg mt-2">
-                    {/* Sub Orders Section */}
-                    <div className="mt-4">
-                      <h3 className="text-lg font-semibold text-blue-300 mb-2">
-                        תתי-הזמנות
-                      </h3>
-                      <div className="space-y-3">
-                        {selectedExpense.subOrders.map((subOrder, index) => (
-                          <div
-                            key={index}
-                            className="flex justify-between items-center bg-gray-900 p-3 rounded-lg shadow"
-                          >
-                            <div>
-                              <p className="text-md font-semibold text-blue-300">
-                                {players.find((p) => p.id === subOrder.playerId)
-                                  ?.name || "לא ידוע"}
-                              </p>
-                              <p className="text-xs text-gray-400">
-                                {subOrder.details || "ללא פרטים"}
-                              </p>
-                            </div>
-                            <span
-                              dir="ltr"
-                              className="text-green-400 font-semibold bg-gray-800 py-1 px-3 rounded-lg"
-                            >
-                              ₪ {subOrder.amount.toFixed(2)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Edit Mode Toggle */}
-                    <div className="flex justify-center space-x-3 mt-6">
-                      <button
-                        className="bg-red-500 hover:bg-red-600 px-6 py-2 rounded-md text-white shadow-md"
-                        onClick={() => setSelectedExpense(null)}
-                      >
-                        סגור
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
+          {isFormVisible ? (
+            <>
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+              סגור הזמנת אוכל
+            </>
+          ) : (
+            <>
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              הוספת הזמנת אוכל
+            </>
+          )}
+        </button>
+      </div>
 
       {isFormVisible && (
         <div
@@ -727,7 +626,7 @@ const AddFoodExpenses = ({ groupId, tableId, isManagerMode }) => {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 };
 
