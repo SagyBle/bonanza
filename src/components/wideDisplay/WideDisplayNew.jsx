@@ -361,7 +361,11 @@ const WideDisplayNewPage = ({ onClose, players, groupId, tableId }) => {
                     </div>
                     <div className="relative group">
                       <img
-                        src={player.avatarUrl}
+                        src={
+                          player.entries >= 4 && player.sheepAvatarUrl
+                            ? player.sheepAvatarUrl
+                            : player.avatarUrl
+                        }
                         alt={player.name}
                         className={`w-20 h-20 object-contain rounded-full transition-transform duration-300 ${
                           player.finalTotalChips || player.finalTotalChips === 0
