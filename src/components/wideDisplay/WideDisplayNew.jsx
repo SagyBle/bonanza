@@ -263,7 +263,6 @@ const WideDisplayNewPage = ({ onClose, players, groupId, tableId }) => {
       {showAsmachta && selectedPlayer && (
         <WideAsmachta player={selectedPlayer} onClose={handleCloseAsmachta} />
       )}
-      <div className="text-white">{JSON.stringify(players)}</div>
 
       {/* Close button */}
       <button
