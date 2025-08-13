@@ -1,10 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  collection,
-  doc,
-  onSnapshot,
-  updateDoc,
-} from "firebase/firestore";
+import { collection, doc, onSnapshot, updateDoc } from "firebase/firestore";
 import { db } from "../config/firebase";
 import shufflePlayers from "../utils/shufflePlayers";
 
@@ -56,17 +51,20 @@ export default function useShuffledPlayers(groupId, tableId) {
 
         initialized.current = true;
       } else {
-        // Only detect and add new players
+        // Merge updates for existing players + add new ones
         setPlayers((prevPlayers) => {
-          const existingIds = new Set(prevPlayers.map((p) => p.id));
-          const newPlayers = incomingPlayers
-            .filter((p) => !existingIds.has(p.id))
-            .sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999)); // sort new ones if needed
+          const updatedMap = new Map(incomingPlayers.map((p) => [p.id, p]));
 
-          return [...prevPlayers, ...newPlayers];
+          return prevPlayers
+            .map((p) => updatedMap.get(p.id) || p) // update existing players
+            .concat(
+              incomingPlayers.filter(
+                (p) => !prevPlayers.some((prev) => prev.id === p.id)
+              )
+            )
+            .sort((a, b) => (a.order ?? 9999) - (b.order ?? 9999)); // keep order consistent
         });
       }
-
       setLoading(false);
     });
 
