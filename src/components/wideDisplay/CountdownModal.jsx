@@ -117,7 +117,7 @@ const CountdownModal = ({ isVisible, onClose, selectedPlayer }) => {
                 className="text-6xl md:text-8xl font-bold text-yellow-500 mb-8 "
                 dir="rtl"
               >
-                ספירה לאחור...
+                שחק ימניאק
               </h1>
 
               {/* Player and Timer in Row */}
