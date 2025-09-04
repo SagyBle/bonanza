@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 import tableHoriz from "../../assets/images/tableHoriz.png";
 import alexisWhite from "../../assets/icons/alexiswhite.svg";
 import WideAsmachta from "./WideAsmachta";
+import CountdownModal from "./CountdownModal";
+import PlayerSelectionModal from "./PlayerSelectionModal";
 import {
   doc,
   updateDoc,
@@ -139,6 +141,9 @@ const WideDisplayNewPage = ({ onClose, players, groupId, tableId }) => {
   const [showAsmachta, setShowAsmachta] = useState(false);
   const prevEntriesRef = useRef({});
   const [clickedPlayerId, setClickedPlayerId] = useState(null);
+  const [showCountdown, setShowCountdown] = useState(false);
+  const [showPlayerSelection, setShowPlayerSelection] = useState(false);
+  const [countdownPlayer, setCountdownPlayer] = useState(null);
 
   const cachingAudio = new Audio(cachingSound);
   const sheepAudio = new Audio(sheepSound);
@@ -237,6 +242,21 @@ const WideDisplayNewPage = ({ onClose, players, groupId, tableId }) => {
     setSelectedPlayer(null);
   };
 
+  const handlePlayerSelect = (player) => {
+    setCountdownPlayer(player);
+    setShowPlayerSelection(false);
+    setShowCountdown(true);
+  };
+
+  const handleStartCountdown = () => {
+    setShowPlayerSelection(true);
+  };
+
+  const handleCloseCountdown = () => {
+    setShowCountdown(false);
+    setCountdownPlayer(null);
+  };
+
   const positions = getPlayerPositions(players.length);
 
   React.useEffect(() => {
@@ -264,6 +284,23 @@ const WideDisplayNewPage = ({ onClose, players, groupId, tableId }) => {
         <WideAsmachta player={selectedPlayer} onClose={handleCloseAsmachta} />
       )}
 
+      {showPlayerSelection && (
+        <PlayerSelectionModal
+          isVisible={showPlayerSelection}
+          players={players}
+          onPlayerSelect={handlePlayerSelect}
+          onClose={() => setShowPlayerSelection(false)}
+        />
+      )}
+
+      {showCountdown && (
+        <CountdownModal
+          isVisible={showCountdown}
+          selectedPlayer={countdownPlayer}
+          onClose={handleCloseCountdown}
+        />
+      )}
+
       {/* Close button */}
       <button
         onClick={handleClose}
@@ -282,6 +319,27 @@ const WideDisplayNewPage = ({ onClose, players, groupId, tableId }) => {
             strokeLinecap="round"
             strokeLinejoin="round"
             d="M9 9V4.5M9 9H4.5M9 9 3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5 5.25 5.25"
+          />
+        </svg>
+      </button>
+
+      <button
+        className="absolute top-4 left-4 z-50 px-4 py-2 bg-gradient-to-r from-green-400 to-green-600 text-black font-bold rounded-lg shadow-lg hover:from-green-500 hover:to-green-700 transition-all flex items-center gap-2"
+        onClick={handleStartCountdown}
+      >
+        <span>התחל ספירה לאחור</span>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke="currentColor"
+          className="w-5 h-5"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
           />
         </svg>
       </button>
