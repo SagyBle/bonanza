@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from "react";
 import tableHoriz from "../../assets/images/tableHoriz.png";
 import alexisWhite from "../../assets/icons/alexiswhite.svg";
 import WideAsmachta from "./WideAsmachta";
+import CountdownModal from "./CountdownModal";
+import PlayerSelectionModal from "./PlayerSelectionModal";
 import {
   doc,
   updateDoc,
@@ -140,6 +142,9 @@ const WideDisplayNewPage = ({ onClose, players, setPlayers, groupId, tableId }) 
   const [showAsmachta, setShowAsmachta] = useState(false);
   const prevEntriesRef = useRef({});
   const [clickedPlayerId, setClickedPlayerId] = useState(null);
+  const [showCountdown, setShowCountdown] = useState(false);
+  const [showPlayerSelection, setShowPlayerSelection] = useState(false);
+  const [countdownPlayer, setCountdownPlayer] = useState(null);
 
   const cachingAudio = new Audio(cachingSound);
   const sheepAudio = new Audio(sheepSound);
@@ -254,6 +259,21 @@ const WideDisplayNewPage = ({ onClose, players, setPlayers, groupId, tableId }) 
     setSelectedPlayer(null);
   };
 
+  const handlePlayerSelect = (player) => {
+    setCountdownPlayer(player);
+    setShowPlayerSelection(false);
+    setShowCountdown(true);
+  };
+
+  const handleStartCountdown = () => {
+    setShowPlayerSelection(true);
+  };
+
+  const handleCloseCountdown = () => {
+    setShowCountdown(false);
+    setCountdownPlayer(null);
+  };
+
   const positions = getPlayerPositions(players.length);
 
   React.useEffect(() => {
@@ -281,6 +301,23 @@ const WideDisplayNewPage = ({ onClose, players, setPlayers, groupId, tableId }) 
         <WideAsmachta player={selectedPlayer} onClose={handleCloseAsmachta} />
       )}
 
+      {showPlayerSelection && (
+        <PlayerSelectionModal
+          isVisible={showPlayerSelection}
+          players={players}
+          onPlayerSelect={handlePlayerSelect}
+          onClose={() => setShowPlayerSelection(false)}
+        />
+      )}
+
+      {showCountdown && (
+        <CountdownModal
+          isVisible={showCountdown}
+          selectedPlayer={countdownPlayer}
+          onClose={handleCloseCountdown}
+        />
+      )}
+
       {/* Close button */}
       <button
         onClick={handleClose}
@@ -299,6 +336,27 @@ const WideDisplayNewPage = ({ onClose, players, setPlayers, groupId, tableId }) 
             strokeLinecap="round"
             strokeLinejoin="round"
             d="M9 9V4.5M9 9H4.5M9 9 3.75 3.75M9 15v4.5M9 15H4.5M9 15l-5.25 5.25M15 9h4.5M15 9V4.5M15 9l5.25-5.25M15 15h4.5M15 15v4.5m0-4.5 5.25 5.25"
+          />
+        </svg>
+      </button>
+
+      <button
+        className="absolute top-4 left-4 z-50 px-4 py-2 bg-gradient-to-r from-green-400 to-green-600 text-black font-bold rounded-lg shadow-lg hover:from-green-500 hover:to-green-700 transition-all flex items-center gap-2"
+        onClick={handleStartCountdown}
+      >
+        <span>התחל ספירה לאחור</span>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke="currentColor"
+          className="w-5 h-5"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"
           />
         </svg>
       </button>
@@ -333,15 +391,15 @@ const WideDisplayNewPage = ({ onClose, players, setPlayers, groupId, tableId }) 
                           ? "-top-12 left-1/2 -translate-x-1/2"
                           : // Bottom players (position.top > 20)
                           position.top > 20
-                          ? "top-full left-1/2 -translate-x-1/2 mt-8"
+                          ? "top-1/2 left-[96%] -translate-y-1/2"
                           : // Left side players (position.left < -20)
                           position.left < -20
                           ? "top-1/2 -left-12 -translate-y-1/2"
                           : // Right side players (position.left > 20)
-                            "top-1/2 left-full translate-x-2 -translate-y-1/2"
+                            "top-1/2 left-[96%] -translate-y-1/2"
                       }`}
                     >
-                      <div className="relative w-10 h-10">
+                      <div className="relative w-8 h-8">
                         {/* Outer ring */}
                         <div
                           className={`absolute inset-0 bg-gradient-to-br from-yellow-400 via-yellow-500 to-yellow-600 rounded-full shadow-xl border-2 border-yellow-300 ${
@@ -376,9 +434,13 @@ const WideDisplayNewPage = ({ onClose, players, setPlayers, groupId, tableId }) 
                     </div>
                     <div className="relative group">
                       <img
-                        src={player.avatarUrl}
-                        alt={player.name}
-                        className={`w-28 h-28 object-contain rounded-full transition-transform duration-300 ${
+                        src={
+                          player.entries >= 4 && player.sheepAvatarUrl
+                            ? player.sheepAvatarUrl
+                            : player.avatarUrl
+                        }
+                        alt={player.name + "sss"}
+                        className={`w-20 h-20 object-contain rounded-full transition-transform duration-300 ${
                           player.finalTotalChips || player.finalTotalChips === 0
                             ? "opacity-20"
                             : ""
@@ -393,7 +455,7 @@ const WideDisplayNewPage = ({ onClose, players, setPlayers, groupId, tableId }) 
                         player.finalTotalChips || player.finalTotalChips === 0
                       ) && (
                         <div
-                          className={`absolute top-0 left-0 w-28 h-28 rounded-full bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer`}
+                          className={`absolute top-0 left-0 w-20 h-20 rounded-full bg-black bg-opacity-50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer`}
                           onClick={() => handleAddEntry(player)}
                         >
                           <svg
@@ -433,7 +495,7 @@ const WideDisplayNewPage = ({ onClose, players, setPlayers, groupId, tableId }) 
                     </div>
                     <div className="mt-2">
                       <span
-                        className={`text-lg font-heebo font-bold text-black ${
+                        className={`text-lg font-heebo font-bold text-black whitespace-nowrap ${
                           player.finalTotalChips || player.finalTotalChips === 0
                             ? "opacity-20"
                             : ""
@@ -442,6 +504,7 @@ const WideDisplayNewPage = ({ onClose, players, setPlayers, groupId, tableId }) 
                           fontFamily: "Rubik, sans-serif",
                           textShadow:
                             "-1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff, 1px 1px 0 #fff",
+                          fontSize: "0.9rem",
                         }}
                       >
                         {player.name}

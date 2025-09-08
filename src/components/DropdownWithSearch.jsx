@@ -17,10 +17,12 @@ const DropdownWithSearch = ({ groupId, onSelectPlayer }) => {
       const querySnapshot = await getDocs(
         collection(db, `groups/${groupId}/generalPlayers`)
       );
+
       const players = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         name: doc.data().name,
         avatarUrl: doc.data().avatarUrl || null,
+        sheepAvatarUrl: doc.data().sheepAvatarUrl || null,
       }));
       setPlayersList(players);
       setFilteredPlayers(players);
