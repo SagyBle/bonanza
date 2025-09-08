@@ -11,6 +11,7 @@ import {
   getDoc,
   addDoc,
   collection,
+  onSnapshot,
 } from "firebase/firestore";
 import { db } from "../../config/firebase";
 import cachingSound from "../../assets/sounds/caching.mp3";
@@ -136,7 +137,7 @@ const getPlayerPositions = (numPlayers) => {
   return positions[numPlayers] || [];
 };
 
-const WideDisplayNewPage = ({ onClose, players, groupId, tableId }) => {
+const WideDisplayNewPage = ({ onClose, players, setPlayers, groupId, tableId }) => {
   const [selectedPlayer, setSelectedPlayer] = useState(null);
   const [showAsmachta, setShowAsmachta] = useState(false);
   const prevEntriesRef = useRef({});
@@ -149,26 +150,42 @@ const WideDisplayNewPage = ({ onClose, players, groupId, tableId }) => {
   const sheepAudio = new Audio(sheepSound);
   const policeAudio = new Audio(policeSound);
 
+  // 1. Set up the Firestore snapshot listener ONCE
+  useEffect(() => {
+    const playersRef = collection(
+      db,
+      `groups/${groupId}/tables/${tableId}/players`
+    );
+
+    const unsubscribe = onSnapshot(playersRef, (snapshot) => {
+      const updatedPlayers = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setPlayers(updatedPlayers);
+    });
+
+    return () => unsubscribe(); // Clean up the listener on unmount
+  }, [groupId, tableId, setPlayers]);
+
+  // 2. React to changes in players data
   useEffect(() => {
     players.forEach((player) => {
       const prevEntry = prevEntriesRef.current[player.id];
 
       if (prevEntry !== undefined && player.entries !== prevEntry) {
-        // Entry changed for this player
         console.log("Entry changed for player:", player.name);
         setSelectedPlayer(player);
         setShowAsmachta(true);
 
-        // Play sound based on the number of entries
-        const entries = player.entries;
         let soundToPlay = null;
 
-        if (entries < 4) {
-          soundToPlay = cachingAudio;
-        } else if (entries === 4) {
-          soundToPlay = sheepAudio;
-        } else if (entries > 4) {
-          soundToPlay = policeAudio;
+        if (player.entries < 4) {
+          soundToPlay = new Audio(cachingSound);
+        } else if (player.entries === 4) {
+          soundToPlay = new Audio(sheepSound);
+        } else if (player.entries > 4) {
+          soundToPlay = new Audio(policeSound);
         }
 
         if (soundToPlay) {
@@ -178,7 +195,7 @@ const WideDisplayNewPage = ({ onClose, players, groupId, tableId }) => {
         }
       }
 
-      // Update reference for next comparison
+      // Save current entry for next comparison
       prevEntriesRef.current[player.id] = player.entries;
     });
   }, [players]);
@@ -355,19 +372,17 @@ const WideDisplayNewPage = ({ onClose, players, groupId, tableId }) => {
             />
 
             {/* Players */}
-            {players
-              ?.sort((a, b) => a.order - b.order)
-              ?.map((player, index) => {
-                const position = positions[index];
-                return (
-                  <div
-                    key={player.id}
-                    className="absolute w-20 h-20 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center"
-                    style={{
-                      top: `calc(50% + ${position.top}%)`,
-                      left: `calc(50% + ${position.left}%)`,
-                    }}
-                  >
+            {players.map((player) => {
+              const position = positions[player.order];
+              return (
+                <div
+                  key={player.id}
+                  className="absolute w-28 h-28 transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center justify-center"
+                  style={{
+                    top: `calc(50% + ${position.top}%)`,
+                    left: `calc(50% + ${position.left}%)`,
+                  }}
+                >
                     {/* Calculate number position based on player position */}
                     <div
                       className={`absolute ${
