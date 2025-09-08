@@ -314,8 +314,8 @@ const WideDisplayNewPage = ({ onClose, players, setPlayers, groupId, tableId }) 
             />
 
             {/* Players */}
-            {players.map((player, index) => {
-              const position = positions[index];
+            {players.map((player) => {
+              const position = positions[player.order];
               return (
                 <div
                   key={player.id}

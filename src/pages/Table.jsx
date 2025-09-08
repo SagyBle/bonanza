@@ -14,7 +14,6 @@ import {
 } from "firebase/firestore";
 import { db } from "../config/firebase";
 import Asmachta from "../components/Asmachta";
-import shufflePlayers from "../utils/shufflePlayers"
 import useShuffledPlayers from '../hooks/useShuffledPlayers'
 
 // Import icons and sounds
@@ -53,7 +52,6 @@ const Table = ({ isManagerMode, soundEnabled }) => {
   const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
   const [showWideDisplay, setShowWideDisplay] = useState(false);
   const { players, loading, setPlayers } = useShuffledPlayers(groupId, tableId);
-
 
   // Add effect to handle body scroll when modal is open
   useEffect(() => {

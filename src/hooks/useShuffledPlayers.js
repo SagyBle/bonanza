@@ -71,5 +71,8 @@ export default function useShuffledPlayers(groupId, tableId) {
     return () => unsubscribe();
   }, [groupId, tableId]);
 
+  if (players) {
+    players.sort((a, b) => a.order - b.order);
+  }
   return { players, loading, setPlayers };
 }
