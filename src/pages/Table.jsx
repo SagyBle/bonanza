@@ -14,6 +14,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../config/firebase";
 import Asmachta from "../components/Asmachta";
+import useShuffledPlayers from '../hooks/useShuffledPlayers'
 
 // Import icons and sounds
 import sheepIcon from "../assets/icons/sheep.svg";
@@ -37,7 +38,6 @@ import WideDisplayNew from "../components/wideDisplay/WideDisplayNew";
 const Table = ({ isManagerMode, soundEnabled }) => {
   const { groupId, tableId } = useParams();
   const navigate = useNavigate();
-  const [players, setPlayers] = useState([]);
   const [recentlyUpdated, setRecentlyUpdated] = useState({});
   const [showAsmachta, setShowAsmachta] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState(null);
@@ -45,13 +45,13 @@ const Table = ({ isManagerMode, soundEnabled }) => {
   const [newPlayerName, setNewPlayerName] = useState("");
   const [tableData, setTableData] = useState({ title: "", description: "" });
   // const [soundEnabled, setSoundEnabled] = useState(true); // State for sound toggle
-  const [loading, setLoading] = useState(true); // Loading state for players
   const [showSumupPlayerModal, setShowSumupPlayerModal] = useState(false);
   const [showCloseTableModal, setShowCloseTableModal] = useState(false);
   const [playerToSumUp, setPlayerToSumUp] = useState(null);
   const [playerToAdd, setPlayerToAdd] = useState();
   const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
   const [showWideDisplay, setShowWideDisplay] = useState(false);
+  const { players, loading, setPlayers } = useShuffledPlayers(groupId, tableId);
 
   // Add effect to handle body scroll when modal is open
   useEffect(() => {
@@ -73,13 +73,10 @@ const Table = ({ isManagerMode, soundEnabled }) => {
 
   useEffect(() => {
     const checkTableExists = async () => {
-      // const tableDocRef = doc(db, `groups/${groupId}/tables`, tableId);
       const tableDocRef = doc(db, `groups/${groupId}/tables/${tableId}`);
-
       const tableDocSnap = await getDoc(tableDocRef);
 
       if (!tableDocSnap.exists()) {
-        // If the table does not exist, navigate to the homepage
         navigate("/");
       } else {
         setTableData(tableDocSnap.data());
@@ -87,25 +84,7 @@ const Table = ({ isManagerMode, soundEnabled }) => {
     };
 
     checkTableExists();
-
-    const playersRef = collection(
-      db,
-      `groups/${groupId}/tables/${tableId}/players`
-    );
-
-    // Set up a real-time listener for the players collection
-    const unsubscribe = onSnapshot(playersRef, (snapshot) => {
-      const playersList = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-      setPlayers(playersList);
-      setLoading(false); // Stop loading once players are fetched
-    });
-
-    // Clean up the listener on unmount
-    return () => unsubscribe();
-  }, [tableId, navigate]);
+  }, [groupId, tableId, navigate]);
 
   const handleAddEntry = async (playerId) => {
     try {
@@ -313,11 +292,15 @@ const Table = ({ isManagerMode, soundEnabled }) => {
     );
 
     try {
+      const maxOrder = players.reduce((max, p) => Math.max(max, p.order ?? -1), -1);
+      const nextOrder = maxOrder + 1;
+
       await setDoc(playerDocRef, {
         name: playerToAdd.name,
         entries: 1,
         timestamp: new Date().toISOString(),
-        ...playerToAdd, // This will include avatarUrl and any other player fields
+        order: nextOrder,
+        ...playerToAdd,
       });
 
       // Add a history entry for the added player
@@ -373,6 +356,7 @@ const Table = ({ isManagerMode, soundEnabled }) => {
           <WideDisplayNew
             onClose={() => setShowWideDisplay(false)}
             players={players}
+            setPlayers={setPlayers}
             groupId={groupId}
             tableId={tableId}
           />

@@ -3,6 +3,7 @@ import { db } from "../config/firebase";
 import { addDoc, collection, doc, setDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import DropdownWithSearch from "../components/DropdownWithSearch";
+import shufflePlayers from '../utils/shufflePlayers'
 
 const CreateATable = ({ groupId }) => {
   const [roomTitle, setRoomTitle] = useState("");
@@ -139,7 +140,8 @@ const CreateATable = ({ groupId }) => {
       });
 
       const playersCollectionRef = collection(tableDocRef, "players");
-      for (const player of players) {
+      const shuffledPlayers = shufflePlayers(players)
+      for (const player of shuffledPlayers) {
         const playerDocRef = doc(playersCollectionRef, player.id);
         console.log("player", player);
 
@@ -147,6 +149,7 @@ const CreateATable = ({ groupId }) => {
           ...player,
           entries: 1,
           avatarUrl: player.avatarUrl || null,
+          order: player.order
         });
 
         await addDoc(historyCollectionRef, {
