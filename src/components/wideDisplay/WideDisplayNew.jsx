@@ -145,6 +145,7 @@ const WideDisplayNewPage = ({ onClose, players, setPlayers, groupId, tableId }) 
   const [showCountdown, setShowCountdown] = useState(false);
   const [showPlayerSelection, setShowPlayerSelection] = useState(false);
   const [countdownPlayer, setCountdownPlayer] = useState(null);
+  const [clickTimes, setClickTimes] = useState([]);
 
   const cachingAudio = new Audio(cachingSound);
   const sheepAudio = new Audio(sheepSound);
@@ -274,6 +275,26 @@ const WideDisplayNewPage = ({ onClose, players, setPlayers, groupId, tableId }) 
     setCountdownPlayer(null);
   };
 
+  const handleTripleClick = () => {
+    const currentTime = Date.now();
+
+    // Add current click time and filter out clicks older than 1 second
+    setClickTimes((prevTimes) => {
+      const newTimes = [...prevTimes, currentTime].filter(
+        (time) => currentTime - time <= 1000
+      );
+
+      // If we have 3 clicks within 1 second, trigger countdown
+      if (newTimes.length >= 3) {
+        setCountdownPlayer(null); // No specific player
+        setShowCountdown(true);
+        return []; // Reset click times
+      }
+
+      return newTimes;
+    });
+  };
+
   const positions = getPlayerPositions(players.length);
 
   React.useEffect(() => {
@@ -361,7 +382,10 @@ const WideDisplayNewPage = ({ onClose, players, setPlayers, groupId, tableId }) 
         </svg>
       </button>
 
-      <div className="w-screen h-screen flex items-center justify-center">
+      <div
+        className="w-screen h-screen flex items-center justify-center"
+        onClick={handleTripleClick}
+      >
         <div className="w-[70vw] h-[60vh] relative">
           {/* Table Image in the center */}
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full h-full flex items-center justify-center">

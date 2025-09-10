@@ -95,7 +95,7 @@ const CountdownModal = ({ isVisible, onClose, selectedPlayer }) => {
               <h1 className="text-8xl md:text-9xl font-bold text-red-500 mb-8 animate-bounce">
                 TIME OVER!
               </h1>
-              {selectedPlayer && (
+              {selectedPlayer ? (
                 <div className="flex flex-col items-center">
                   <div className="w-48 h-48 rounded-full overflow-hidden border-8 border-red-500 shadow-2xl mb-6 animate-pulse">
                     <img
@@ -108,16 +108,22 @@ const CountdownModal = ({ isVisible, onClose, selectedPlayer }) => {
                     {selectedPlayer.name}
                   </h2>
                 </div>
+              ) : (
+                <div className="flex flex-col items-center">
+                  <div className="w-48 h-48 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-600 border-8 border-red-500 shadow-2xl mb-6 animate-pulse flex items-center justify-center">
+                    <span className="text-6xl">⏰</span>
+                  </div>
+                  <h2 className="text-4xl md:text-5xl font-bold text-white">
+                    General Timer
+                  </h2>
+                </div>
               )}
             </div>
           ) : (
             /* Normal Countdown Display */
             <>
-              <h1
-                className="text-6xl md:text-8xl font-bold text-yellow-500 mb-8 "
-                dir="rtl"
-              >
-                שחק ימניאק
+              <h1 className="text-6xl md:text-8xl font-bold text-yellow-500 mb-8">
+                COUNT DOWN
               </h1>
 
               {/* Player and Timer in Row */}
@@ -139,7 +145,11 @@ const CountdownModal = ({ isVisible, onClose, selectedPlayer }) => {
                 )}
 
                 {/* Large circular timer */}
-                <div className="relative w-80 h-80">
+                <div
+                  className={`relative ${
+                    selectedPlayer ? "w-80 h-80" : "w-96 h-96"
+                  }`}
+                >
                   <svg
                     className="w-full h-full -rotate-90"
                     viewBox="0 0 100 100"
