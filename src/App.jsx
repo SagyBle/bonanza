@@ -20,6 +20,7 @@ import UnionsManager from "./pages/UnionsManager";
 import Union from "./pages/Union";
 import GroupsManager from "./pages/GroupsManager";
 import Group from "./pages/Group";
+import FetchGroupsData from "./pages/FetchGroupsData";
 
 function App() {
   const [isManagerMode, setIsManagerMode] = useState(false);
@@ -105,6 +106,10 @@ const AppContent = ({
           <Route
             path="/union/:unionId"
             element={<Union isManagerMode={isManagerMode} />}
+          />
+          <Route
+            path="/fetch-groups-data"
+            element={<FetchGroupsData />}
           />
           <Route path="*" element={<Navigate to="/groups" replace />} />
         </Routes>
